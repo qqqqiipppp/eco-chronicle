@@ -1,0 +1,31 @@
+{
+  "browser": "Chromium 153.0.8010.0 headless",
+  "checks_passed": [
+    "테마/몬스터/아이템/NPC/레벨/외형/사운드 데이터 및 저장 키 원본과 동일",
+    "시작 화면 원본 대비 픽셀 차이 0",
+    "원본 저장 로드: 장비 및 진행 관문 유지",
+    "저장·새로고침·불러오기: 골드/경험치 유지",
+    "실제 UI: 이름·외형·짙은 피부·정령 선택·월드 진입",
+    "키보드 캐릭터 이동 및 방향/걷기",
+    "가방·장비 장착·경험치·레벨 상승",
+    "NPC 퀴즈 퀘스트 수행·완료·보상",
+    "농장/채집 맵 진입 및 복귀",
+    "여섯 테마 이동·일반 몬스터 전투·공격 시 체력 감소·보스 표시",
+    "두 미니게임 시작·일시정지·실패·재도전·승리 후 실제 전투 연결",
+    "상대경로 이미지 캐시 재사용",
+    "실제 AudioContext running, BGM 예약, SFX 호출",
+    "751개 외부 이미지 전부 HTTP 로드와 decode 통과",
+    "저장소 하위경로 /eco-chronicle/ 및 index.html 직접 진입",
+    "390×844 모바일 크기 시작 화면 표시",
+    "처리되지 않은 브라우저 오류 0, 정적 파일 실패 응답 0"
+  ],
+  "title_pixel_differences": 0,
+  "uncaught_errors": 0,
+  "failed_static_responses": 0,
+  "note": "Browser validation completed before temporary workspace cleanup. The same original archive and identical conversion were restored; inverse JS/CSS comparison, source SHA, all image hashes and script syntax were checked again after restoration.",
+  "limits": [
+    "실제 휴대폰/Safari/Firefox 미검증",
+    "실제 공개 GitHub Pages 배포 미수행",
+    "사운드 청취 품질 미판정"
+  ]
+}
