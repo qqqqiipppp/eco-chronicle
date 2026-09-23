@@ -1,0 +1,44 @@
+{
+  "date": "2026-09-23",
+  "scope": "별도 localhost 포트와 테스트 캐릭터 EC5388. 기존 사용자의 브라우저 저장 데이터 미접근.",
+  "passed": [
+    "시작 화면",
+    "새 게임 이름 등록",
+    "캐릭터 외형/얼굴 선택",
+    "정령 선택",
+    "숲 월드 진입",
+    "키보드 이동: hero left 298px에서 301px로 변화",
+    "가방 및 장비 슬롯/아이템 수량 표시",
+    "현재 레벨 및 다음 레벨 경험치 표시",
+    "테마 지도와 잠금 레벨 표시",
+    "월드 캐릭터/NPC/배경/UI 육안 확인",
+    "저장 완료 표시",
+    "새로고침 후 EC5388 이어하기",
+    "불러온 이름/레벨/체력/골드 유지",
+    "보존 이미지 518개 브라우저 로드 및 naturalWidth > 0"
+  ],
+  "notTested": [
+    "농장/채집 등 실제 맵 이동",
+    "다른 테마 실제 진입",
+    "일반 전투 및 보스전 진행",
+    "미니게임 플레이",
+    "장비 실제 장착 및 아이템 사용",
+    "퀘스트 수행/완료",
+    "레벨 상승/경험치 획득",
+    "효과음/BGM 청취 및 AudioContext 상태",
+    "기존 사용자 저장 데이터 직접 불러오기"
+  ],
+  "observations": {
+    "retainedImageLoadPass": 518,
+    "retainedImageLoadFail": 0,
+    "gameAssetRequestFail": 0,
+    "quarantinedFileRequested": 0,
+    "uniqueGameImagesRequestedDuringSmokeTest": 62,
+    "consoleErrorsOrWarnings": 0,
+    "unrelatedHttp404": [
+      "favicon.ico"
+    ],
+    "restoredFiles": []
+  },
+  "note": "62는 UI 테스트에서 관찰한 요청 수이며 A/B/C 분류의 A는 정적 소비 경로로 확인한 160개 고유 파일이다. 이미지 일괄 로드 검사는 게임 기능 전체 테스트를 대신하지 않는다. 이전 docs/TEST_RESULTS.json 결과를 이번 테스트로 재사용하지 않았다."
+}
