@@ -78,8 +78,14 @@
     if (first || !player.position || Math.hypot(player.position.x - p.x, player.position.y - p.y) > 240) {
       setPosition(player, { x: p.x, y: p.y });
     }
+    if (player.position && !onScreen(player)) setPosition(player, { x: p.x, y: p.y });
     if (player.element) paint(player);
-    scheduleAnimation();
+    if (!p.moving && player.element && typeof window.syncStride === 'function') {
+      player.animationState = player.animationState || {};
+      window.syncStride(player.element, player.animationState, 0);
+    }
+    if (player.position && onScreen(player) &&
+        Math.hypot(player.targetX - player.position.x, player.targetY - player.position.y) >= 0.4) scheduleAnimation();
     return true;
   }
 
@@ -87,6 +93,14 @@
     if (animation !== null) return;
     lastFrame = performance.now();
     animation = requestAnimationFrame(animate);
+  }
+
+  function onScreen(player) {
+    var world = window.Wd;
+    return !world || !Number.isFinite(world.cx) || !Number.isFinite(world.cy) ||
+      !Number.isFinite(world.vw) || !Number.isFinite(world.vh) ||
+      (player.targetX >= world.cx - 88 && player.targetX <= world.cx + world.vw + 88 &&
+       player.targetY >= world.cy - 88 && player.targetY <= world.cy + world.vh + 88);
   }
 
   function animate(now) {
@@ -98,6 +112,11 @@
       var alpha = 1 - Math.exp(-dt / 65), pending = false;
       Object.values(remotePlayers).forEach(function (p) {
         if (p.lastSeq == null || !p.position || !p.element) return;
+        if (!onScreen(p)) {
+          if (p.position.x !== p.targetX || p.position.y !== p.targetY)
+            setPosition(p, { x: p.targetX, y: p.targetY });
+          return;
+        }
         var dx = p.targetX - p.position.x, dy = p.targetY - p.position.y;
         var distance = Math.hypot(dx, dy);
         var x = distance < 0.4 ? p.targetX : p.position.x + dx * alpha;
@@ -117,7 +136,7 @@
   function paint(player) {
     var look = player.appearance;
     var signature = JSON.stringify(look);
-    player.label.textContent = player.nickname;
+    if (player.label.textContent !== player.nickname) player.label.textContent = player.nickname;
     if (player.artSignature === signature) return;
     var direction = window.sideDir(look.direction);
     var bodyKey = 'body_' + look.outfit + '_' + direction;
@@ -177,7 +196,10 @@
         if (!player.element || player.element.parentNode !== layer) create(player);
         else paint(player);
       });
-      if (!layer.hidden && Object.values(remotePlayers).some(function (p) { return p.lastSeq != null; })) scheduleAnimation();
+      if (!layer.hidden && Object.values(remotePlayers).some(function (p) {
+        return p.lastSeq != null && p.position && onScreen(p) &&
+          Math.hypot(p.targetX - p.position.x, p.targetY - p.position.y) >= 0.4;
+      })) scheduleAnimation();
     } catch (error) { console.warn('[RemotePlayers] display unavailable:', error.message); }
   }
 

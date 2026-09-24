@@ -2,8 +2,10 @@
 (function () {
   'use strict';
   var themes = ['forest', 'river', 'ocean', 'city', 'air', 'climate'];
-  var playerId, panel, active = null, busy = false, suspended = false;
+  var playerId, panel, active = null, busy = false, suspended = false, disabled = false;
   var retryAt = 0, lastOutput = '', lastDisplay = '';
+  var connectionStatus = 'reconnecting', onlineCount = 0, reconnectCount = 0, recovering = false;
+  var cleanup = null;
 
   function updateRemotePlayers(theme, players) {
     try {
@@ -18,7 +20,8 @@
   function playerSignature(target) { return target.nickname + JSON.stringify(target.appearance) + JSON.stringify(target.summary); }
 
   function show(status, theme, players) {
-    var text = '접속 디버그 · ' + (theme ? 'eco-' + theme : '대기') + '\n' + status;
+    var labels = { connected: '멀티플레이 연결됨', unstable: '연결 불안정', reconnecting: '재연결 중', offline: '오프라인 모드' };
+    var text = labels[connectionStatus] + '\n접속 디버그 · ' + (theme ? 'eco-' + theme : '대기') + '\n' + status;
     if (players) text += '\n' + players.map(function (p) {
       return p.nickname + (p.playerId === playerId ? ' (나)' : '');
     }).join('\n');
@@ -54,6 +57,7 @@
         });
       });
       var list = Array.from(players.values()).sort(function (a, b) { return a.playerId.localeCompare(b.playerId); });
+      onlineCount = list.length;
       var signature = session.theme + JSON.stringify(list);
       show('온라인 ' + list.length + '명', session.theme, list);
       updateRemotePlayers(session.theme, list);
@@ -75,14 +79,17 @@
     try {
       var result = await session.channel.track(Object.assign({ playerId: playerId, nickname: target.nickname,
         theme: session.theme, joinedAt: session.joinedAt }, target.appearance, target.summary));
-      if (active !== session) return;
+      if (active !== session || !session.subscribed) return;
       if (result !== 'ok') throw new Error('track returned ' + result);
       session.nickname = target.nickname;
       session.signature = playerSignature(target);
       session.trackRetryAt = 0;
+      connectionStatus = 'connected';
+      sync(session);
     } catch (error) {
       if (active !== session) return;
       session.trackRetryAt = Date.now() + 5000;
+      connectionStatus = 'unstable';
       show('접속 알림 재시도 중', session.theme);
       fail('Could not publish presence', error);
     } finally { session.tracking = false; }
@@ -95,6 +102,7 @@
     updateRemotePlayers(null, []);
     if (window.ecoOnlinePlayers) window.ecoOnlinePlayers.update(playerId, null, []);
     lastOutput = '';
+    onlineCount = 0;
     if (!previous) return;
     console.info('[Presence] leaving eco-' + previous.theme);
     // Best effort untrack; channel removal also removes server-side presence.
@@ -110,16 +118,24 @@
     if (busy || suspended) return;
     busy = true;
     try {
+      if (cleanup) await cleanup;
       var target = current();
       var connection = window.ecoSupabase;
       var client = connection && connection.client;
-      if (active && (!target || target.theme !== active.theme || client !== active.client || active.closed)) {
+      var offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+      if (active && (disabled || offline || !target || target.theme !== active.theme || client !== active.client ||
+          active.closed || (active.reconnectAt && Date.now() >= active.reconnectAt))) {
         show('채널 이동 중', target && target.theme);
         await leave();
       }
-      if (suspended) return;
+      if (suspended || disabled || offline) {
+        connectionStatus = 'offline';
+        show('온라인 정보 없음', target && target.theme);
+        return;
+      }
       target = current(); // Theme may have changed again while leave was pending.
       if (!client || !target) {
+        connectionStatus = client ? 'reconnecting' : 'offline';
         show(connection && connection.status === 'failed' ? '연결 불가 · 게임은 계속 가능' : '연결 대기', target && target.theme);
         return;
       }
@@ -132,14 +148,20 @@
         joinedAt: new Date().toISOString(), subscribed: false, tracking: false, closed: false };
       session.channel = client.channel('eco-' + target.theme, { config: { presence: { key: playerId }, broadcast: { self: false } } });
       active = session;
+      connectionStatus = 'reconnecting';
       show('접속 중', session.theme);
       session.channel.on('presence', { event: 'sync' }, function () { sync(session); });
       if (window.ecoMovement) window.ecoMovement.attach(session.channel, playerId, session.theme, session.joinedAt);
       session.channel.subscribe(function (status, error) {
-        if (active !== session || suspended) return;
+        if (active !== session || suspended || disabled) return;
         session.subscribed = status === 'SUBSCRIBED';
         if (window.ecoMovement) window.ecoMovement.ready(session.subscribed);
         if (session.subscribed) {
+          session.reconnectAt = 0;
+          retryAt = 0;
+          if (recovering) { reconnectCount++; recovering = false; }
+          connectionStatus = 'connected';
+          show('온라인 확인 중', session.theme);
           console.info('[Presence] joined eco-' + session.theme);
           // SUBSCRIBED also occurs after transport reconnection: always re-track.
           track(session).catch(function (e) { fail('Track failed', e); });
@@ -149,15 +171,20 @@
           updateRemotePlayers(null, []);
           if (window.ecoOnlinePlayers) window.ecoOnlinePlayers.update(playerId, null, []);
           lastOutput = '';
+          onlineCount = 0;
+          recovering = true;
+          connectionStatus = status === 'CHANNEL_ERROR' ? 'unstable' : 'reconnecting';
           show('연결 끊김 · 재접속 대기', session.theme);
           fail(status + ' eco-' + session.theme, error);
-          // SDK retries transport errors; recreate explicitly closed channels only.
-          if (status === 'CLOSED') { session.closed = true; retryAt = Date.now() + 3000; }
+          // Give the SDK one short recovery window, then replace this one channel.
+          session.reconnectAt = session.reconnectAt || Date.now() + 3000;
+          retryAt = session.reconnectAt;
         }
       });
     } catch (error) {
       retryAt = Date.now() + 5000;
       await leave();
+      connectionStatus = 'unstable';
       show('연결 오류 · 게임은 계속 가능');
       fail('Initialization/update failed', error);
     } finally { busy = false; }
@@ -169,9 +196,35 @@
     playerId = Array.from(bytes, function (b) { return b.toString(16).padStart(2, '0'); }).join('');
     panel = document.createElement('aside');
     panel.id = 'ecoPresenceDebug';
-    panel.setAttribute('aria-label', '테마 접속자 디버그');
+    panel.setAttribute('aria-label', '테마 접속인원 디버그');
     panel.style.cssText = 'position:fixed;right:18px;top:82px;z-index:1000;max-width:180px;max-height:120px;overflow:hidden;pointer-events:none;white-space:pre-line;padding:6px 9px;border-radius:6px;background:rgba(16,35,30,.82);color:#fff;font:11px/1.5 sans-serif;';
     document.body.appendChild(panel); // Outside the game's frequently replaced screen.
+    window.ecoMultiplayer = {
+      disable: function () {
+        disabled = true; connectionStatus = 'offline';
+        if (window.ecoMovement) window.ecoMovement.ready(false);
+        cleanup = leave().catch(function (e) { fail('Disable cleanup failed', e); })
+          .finally(function () { cleanup = null; });
+        show('온라인 정보 없음', null);
+      },
+      enable: function () {
+        if (!disabled) return;
+        disabled = false; retryAt = 0; connectionStatus = 'reconnecting';
+        show('접속 중', current() && current().theme);
+        reconcile().catch(function (e) { fail('Enable failed', e); });
+      },
+      getStats: function () {
+        var movement = window.ecoMovement && typeof window.ecoMovement.getStats === 'function' && window.ecoMovement.getStats();
+        return { theme: active ? active.theme : (current() && current().theme) || null,
+          onlinePlayers: onlineCount,
+          remotePlayers: window.ecoRemotePlayers && window.ecoRemotePlayers.remotePlayers ?
+            Object.keys(window.ecoRemotePlayers.remotePlayers).length : 0,
+          movementIntervalMs: movement ? movement.intervalMs : 125,
+          sent: movement ? movement.sent : 0, received: movement ? movement.received : 0,
+          ignored: movement ? movement.ignored : 0, failures: movement ? movement.failures : 0,
+          reconnectCount: reconnectCount, status: connectionStatus };
+      }
+    };
     function tick() {
       if (window.ecoRemotePlayers) window.ecoRemotePlayers.refresh();
       reconcile().catch(function (e) { fail('Update failed', e); });
@@ -187,6 +240,20 @@
       clearInterval(poll);
       poll = setInterval(tick, 500);
       tick();
+    });
+    window.addEventListener('offline', function () {
+      connectionStatus = 'offline';
+      if (window.ecoMovement) window.ecoMovement.ready(false);
+      updateRemotePlayers(null, []);
+      if (window.ecoOnlinePlayers) window.ecoOnlinePlayers.update(playerId, null, []);
+      onlineCount = 0;
+      show('온라인 정보 없음', active && active.theme);
+      reconcile().catch(function (e) { fail('Offline cleanup failed', e); });
+    });
+    window.addEventListener('online', function () {
+      if (disabled) return;
+      retryAt = 0; connectionStatus = 'reconnecting';
+      reconcile().catch(function (e) { fail('Reconnect failed', e); });
     });
     tick();
   } catch (error) { fail('Presence unavailable; game remains independent', error); }

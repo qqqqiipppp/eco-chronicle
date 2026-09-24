@@ -43,13 +43,14 @@
   }
 
   function update(id, theme, players) {
+    var previous = JSON.stringify([selfId, rosterTheme, online, roster]);
     selfId = id;
     rosterTheme = theme;
     online = !!theme;
     roster = online ? players.filter(function (p) { return p.theme === theme; }).map(function (p) {
       return Object.assign({ playerId: p.playerId, nickname: clean(p.nickname, 24), theme: p.theme }, sanitize(p));
     }) : [];
-    render();
+    if (JSON.stringify([selfId, rosterTheme, online, roster]) !== previous) render();
   }
 
   function cell(row, label, value) {
@@ -104,7 +105,7 @@
     var sheet = document.querySelector('#modalHost .sheet');
     if (!sheet || sheet.querySelector('.eco-online')) return;
     sheet.classList.add('eco-online-sheet');
-    sheet.innerHTML = '<div class="eco-online"><div class="mhead"><span>🌿 현재 접속자</span><button class="iconbtn eco-online-close" type="button">닫기</button></div>' +
+    sheet.innerHTML = '<div class="eco-online"><div class="mhead"><span>🌿 현재 접속인원</span><button class="iconbtn eco-online-close" type="button">닫기</button></div>' +
       '<p class="eco-online-sub">같은 지역에 있는 플레이어</p><div id="ecoOnlineCount" class="eco-online-count"></div>' +
       '<div class="eco-online-scroll"><table><thead><tr><th>닉네임</th><th>정령</th><th>레벨</th><th>장비</th><th>진행 단계</th></tr></thead>' +
       '<tbody id="ecoOnlineRows"></tbody></table></div></div>';
@@ -118,7 +119,7 @@
     var button = document.createElement('button');
     button.className = 'iconbtn eco-online-button';
     button.type = 'button';
-    button.textContent = '접속자';
+    button.textContent = '접속인원';
     button.addEventListener('click', open);
     buttons.insertBefore(button, buttons.querySelector('#saveDot')?.parentElement || null);
   }

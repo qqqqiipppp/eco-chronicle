@@ -20,7 +20,7 @@ function startEncounter(){
  advanceEncounter();
  if(S.battleDone){leaveBattle();return;}
  if(S.interludePending){closeBattleDom();B=null;S.modal='interlude';drawModal();return;}
- InterludeRun=null;mountBattle();
+ InterludeRun=null;if(curMon().mode==='pang')mountPang();else mountBattle();
 }
 function mInterlude(){
  var p=pendingInterlude();if(!p)return '';

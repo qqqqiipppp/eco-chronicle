@@ -21,6 +21,7 @@ function environment() {
     MutationObserver: class { observe() {} },
     requestAnimationFrame: f => { frames.set(++id, f); return id; }, cancelAnimationFrame: i => frames.delete(i),
     setInterval: (f, ms) => { timers.set(++id, { f, ms }); return id; }, clearInterval: i => timers.delete(i),
+    setTimeout, clearTimeout,
     addEventListener() {}, S: { themeId: 'forest', scene: 'world', modal: null },
     Wd: { px: 300, py: 500, face: 'south', moving: false }, W: 2500, H: 2200,
     SPAWN: { x: 300, y: 500 }, OBJS: [], Nd: { spots: [] },
@@ -72,6 +73,8 @@ function environment() {
   assert.equal(Object.keys(r.remotePlayers).length, 10);
   ten.forEach((p, i) => assert.equal(r.remotePlayers[p.playerId].position.x, 550 + i * 100));
   assert.equal(e.frames.size, 0, 'settled actors do not keep a frame loop running');
+  r.refresh();
+  assert.equal(e.frames.size, 0, 'Presence refresh does not wake stationary actors');
 
   const sent = [], handlers = {};
   let fail = false;
@@ -108,5 +111,25 @@ function environment() {
   assert.equal(sent.length, count, 'no send on disconnected channel');
   movement.detach(); handlers['world-position']({ payload: { ...message, seq: 999 } });
   assert.equal(r.remotePlayers.peer.lastSeq, 101, 'old channel callback ignored');
+  const load = environment(), lc = load.c;
+  const thirtyFour = Array.from({ length: 34 }, (_, i) => ({ ...peer, playerId: `load-${i}` }));
+  lc.ecoRemotePlayers.sync('self', 'forest', [self, ...thirtyFour]);
+  const loadSent = [];
+  const loadChannel = { on() {}, async send(msg) { loadSent.push(msg); return 'ok'; } };
+  lc.ecoMovement.attach(loadChannel, 'self', 'forest', 's1');
+  lc.ecoMovement.ready(true);
+  lc.ecoMovement.members([self, ...thirtyFour]);
+  assert.equal(Object.keys(lc.ecoRemotePlayers.remotePlayers).length, 34);
+  assert.equal(lc.ecoMovement.getStats().intervalMs, 200, '35 members activate 5Hz');
+  assert.equal([...load.timers.values()].filter(t => t.ms === 200).length, 1, 'one movement interval');
+  for (let i = 0; i < 5; i++) { lc.Wd.px += 2; await load.poll(200); }
+  assert.equal(loadSent.filter(m => m.event === 'world-position').length, 5, 'five changed positions per second');
+  const stationary = loadSent.filter(m => m.event === 'world-position').length;
+  for (let i = 0; i < 5; i++) await load.poll(200);
+  assert.equal(loadSent.filter(m => m.event === 'world-position').length, stationary, 'low mode stays silent while stationary');
+  lc.Wd.cx = 0; lc.Wd.cy = 0; lc.Wd.vw = 600; lc.Wd.vh = 500;
+  lc.ecoRemotePlayers.receivePosition({ ...message, playerId: 'load-0', joinedAt: 'p1', seq: 1, x: 1500, y: 1500 });
+  lc.ecoRemotePlayers.receivePosition({ ...message, playerId: 'load-0', joinedAt: 'p1', seq: 2, x: 1510, y: 1510 });
+  assert.equal(lc.ecoRemotePlayers.remotePlayers['load-0'].position.x, 1510, 'offscreen actor snaps without animation');
   console.log('PASS: ordering, validation, membership, 10 actors, interpolation/snap, idle suppression, 8Hz, personal screens, failure/backoff, state isolation');
 })().catch(error => { console.error(error); process.exitCode = 1; });

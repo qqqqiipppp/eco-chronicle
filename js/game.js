@@ -1643,7 +1643,7 @@ function mAdminPanel(){
     <div class="admin-monster-preview">${monsterSVG(curMonIdx(),76)}</div>
     <div class="note">지금 상대: ${curMon()?curMon().name:'-'} (${curMonIdx()+1}/${CUR.monsters.length})</div>
     <div style="font-size:12px;color:var(--gold);margin-top:2px">미니게임 바로 열기</div>
-    <div class="row"><button class="btn sec" onclick="admMini('pang')">🫧 팡팡</button>
+    <div class="row"><button class="btn sec" onclick="admMini('pang')">🧹 플로킹</button>
       <button class="btn sec" onclick="admMini('spheres')">🔵 칸 채우기</button>
       <button class="btn sec" onclick="admMini('timing')">✦ 정령 바운스</button></div>
     <div class="row"><button class="btn sec" onclick="admMini('match')">🧩 정화 퍼즐</button>
@@ -3179,6 +3179,7 @@ function mMeet(){
   const m=curMon();
   const st=baseStats();
   const ms=monStats(m);
+  const plogging=m.mode==='pang';
   const lowHp = S.hpCur/st.hpMax <= .35;
   const kindTxt = m.boss? '<span style="color:var(--danger)">최종 보스</span>'
                 : m.mid ? '<span style="color:var(--gold)">중간 보스</span>'
@@ -3189,15 +3190,15 @@ function mMeet(){
     <div class="encounter">
       <div style="filter:drop-shadow(0 6px 8px rgba(0,0,0,.5))">${monsterSVG(curMonIdx(),132)}</div>
       <div class="mon" style="margin-top:6px">${m.name}</div>
-      <div class="note" style="margin-top:2px">${kindTxt} · 체력 ${ms.hp} · 공격 ${ms.atk}</div>
+      <div class="note" style="margin-top:2px">${plogging?'플로킹 관문 · 쓰레기 20개 수거':`${kindTxt} · 체력 ${ms.hp} · 공격 ${ms.atk}`}</div>
     </div>
     <div class="dialogue"><div class="who">🧚 에코</div>${m.meet}<br>
-      싸우러 <b>들어갈까요?</b></div>
-    ${lowHp?`<div class="hpwarn">⚠️ 지금 체력이 <b>${S.hpCur} / ${st.hpMax}</b> 예요.<br>
+      ${plogging?'플로킹으로 주변을 깨끗하게 만들어 볼까요?':'싸우러 <b>들어갈까요?</b>'}</div>
+    ${!plogging&&lowHp?`<div class="hpwarn">⚠️ 지금 체력이 <b>${S.hpCur} / ${st.hpMax}</b> 예요.<br>
         <b>배우는 샘</b>에서 샘물을 마시거나 <b>가게</b>에서 회복약을 사면 좋아요.</div>`:''}
-    ${S.defeatStreak>0?`<div class="note" style="color:var(--gold)">🧚 에코의 도움 +${Math.round(Math.min(S.defeatStreak,BLESS_MAX)*BLESS_STEP*100)}% 를 받고 들어가요</div>`:''}
+    ${S.defeatStreak>0?`<div class="note" style="color:var(--gold)">${plogging?`다시 도전하면 하트 +${Math.min(2,S.defeatStreak)}`:`🧚 에코의 도움 +${Math.round(Math.min(S.defeatStreak,BLESS_MAX)*BLESS_STEP*100)}% 를 받고 들어가요`}</div>`:''}
     <div class="row">
-      <button class="btn" onclick="acceptBattle()">⚔️ 들어간다</button>
+      <button class="btn" onclick="acceptBattle()">${plogging?'🧹 플로킹 시작':'⚔️ 들어간다'}</button>
       <button class="btn sec" onclick="declineBattle()">지금은 그냥 지나간다</button>
     </div>`;
 }
@@ -3727,308 +3728,13 @@ function leaveBattle(){
   autosave();
 }
 
-/* ==========================================================
-   팡팡 특공대 방식 액션 전투 (중간보스)
-   포자 덩어리를 정화빔으로 터뜨린다. 큰 것 → 둘로 쪼개짐 → 사라짐
-   ========================================================== */
-var PANG_W=640, PANG_H=360;
-
-function pangHTML(){
-  const m=curMon();
-  return `<div class="pang" id="pangRoot">
-    <div class="pangtop">
-      <span>🍄 ${m.name} <span style="color:var(--gold)">· 중간 보스</span></span>
-      <span class="grow"></span>
-      <span>남은 포자 <b id="pgLeft">0</b></span>
-      <span>⏱ <b id="pgTime">0</b>초</span>
-      <span class="hearts" id="pgHearts"></span>
-    </div>
-    <div class="pangwrap"><canvas id="pangCanvas" width="${PANG_W}" height="${PANG_H}"></canvas></div>
-    <div class="pangctrl">
-      <div class="side">
-        <button class="pbtn" data-p="l">◀</button>
-        <button class="pbtn" data-p="r">▶</button>
-      </div>
-      <button class="pbtn fire" data-p="f">✨ 정화빔</button>
-    </div>
-    <div id="pgResult"></div>
-  </div>`;
-}
-
-function mountPang(){
-  S.modal='pang';
-  const host=$('modalHost'); if(!host) return;
-  host.innerHTML=pangHTML();
-
-  // 연패할수록 하트가 늘고 포자가 느려진다 (에코의 가호 — 액션 전투판 안전장치)
-  const bonusHearts=Math.min(3,S.defeatStreak);
-  const slow=(1-Math.min(.4,S.defeatStreak*0.12))*0.88;   // 기본 속도도 12% 완화
-  const BASE_HEARTS=6;
-  Pg={
-    canvas:$('pangCanvas'), ctx:$('pangCanvas').getContext('2d'),
-    px:PANG_W/2, pw:38, ph:30, speed:0.44,
-    keys:{l:false,r:false},
-    shots:[], balls:[],
-    hearts:BASE_HEARTS+bonusHearts, maxHearts:BASE_HEARTS+bonusHearts,
-    inv:0, t:0, limit:120000, over:false, raf:null, last:0, slow:slow,
-    intro:1400
-  };
-  // 시작 포자 2개 (3개 → 2개로 완화)
-  Pg.balls.push(makeBall(PANG_W*0.25, 92, 3, -1));
-  Pg.balls.push(makeBall(PANG_W*0.75, 68, 3,  1));
-
-  document.querySelectorAll('.pbtn').forEach(b=>{
-    const k=b.dataset.p;
-    const on=e=>{ e.preventDefault(); if(k==='f') pangFire(); else Pg.keys[k]=true; };
-    const off=()=>{ if(k!=='f') Pg.keys[k]=false; };
-    b.addEventListener('pointerdown',on);
-    b.addEventListener('pointerup',off);
-    b.addEventListener('pointerleave',off);
-    b.addEventListener('pointercancel',off);
-  });
-  paintPangHud();
-  Pg.last=performance.now();
-  Pg.raf=requestAnimationFrame(pangStep);
-}
-function makeBall(x,y,tier,dir){
-  const r={3:19,2:13,1:9}[tier];
-  return {x,y,r,tier,vx:0.078*dir*(1+ (3-tier)*0.06),vy:0};
-}
-function pangKey(k,down){
-  if(!Pg||Pg.over) return;
-  if(k==='ArrowLeft'||k==='a'||k==='A')  Pg.keys.l=down;
-  if(k==='ArrowRight'||k==='d'||k==='D') Pg.keys.r=down;
-  if((k===' '||k==='ArrowUp'||k==='w'||k==='W') && down) pangFire();
-}
-function pangFire(){
-  if(!Pg||Pg.over||Pg.intro>0) return;
-  if(Pg.shots.length>=2) return;
-  Pg.shots.push({x:Pg.px, y:PANG_H-46, top:PANG_H-46});
-}
-function paintPangHud(){
-  const h=$('pgHearts'); if(h) h.textContent='❤️'.repeat(Math.max(0,Pg.hearts))+'🖤'.repeat(Math.max(0,Pg.maxHearts-Pg.hearts));
-  const l=$('pgLeft');   if(l) l.textContent=Pg.balls.length;
-  const t=$('pgTime');   if(t) t.textContent=Math.max(0,Math.ceil((Pg.limit-Pg.t)/1000));
-}
-
-function pangStep(now){
-  if(!Pg) return;
-  if(S.modal!=='pang'){ pangStop(); return; }
-  const dt=Math.min(34, now-Pg.last); Pg.last=now;
-  if(!Pg.over) pangUpdate(dt);
-  pangDraw();
-  Pg.raf=requestAnimationFrame(pangStep);
-}
-
-function pangUpdate(dt){
-  const G=0.00036*Pg.slow;
-  if(Pg.intro>0){ Pg.intro-=dt; return; }
-  Pg.t+=dt;
-  if(Pg.t>=Pg.limit){ pangLose("시간이 다 됐어요"); return; }
-  if(Pg.inv>0) Pg.inv-=dt;
-
-  // 플레이어
-  let mv=0;
-  if(Pg.keys.l) mv-=1;
-  if(Pg.keys.r) mv+=1;
-  Pg.px=clamp(Pg.px+mv*Pg.speed*dt, Pg.pw/2, PANG_W-Pg.pw/2);
-
-  // 정화빔
-  for(let i=Pg.shots.length-1;i>=0;i--){
-    const s=Pg.shots[i];
-    s.top-=0.62*dt;
-    if(s.top<=4){ Pg.shots.splice(i,1); }
-  }
-
-  // 포자
-  for(const b of Pg.balls){
-    b.vy+=G*dt;
-    b.x+=b.vx*dt*Pg.slow;
-    b.y+=b.vy*dt;
-    if(b.x-b.r<0){ b.x=b.r; b.vx=Math.abs(b.vx); }
-    if(b.x+b.r>PANG_W){ b.x=PANG_W-b.r; b.vx=-Math.abs(b.vx); }
-    if(b.y-b.r<0){ b.y=b.r; b.vy=Math.abs(b.vy)*0.5; }
-    const floor=PANG_H-16;
-    if(b.y+b.r>floor){
-      b.y=floor-b.r;
-      b.vy = -({3:0.335,2:0.295,1:0.255}[b.tier])*Pg.slow;
-    }
-  }
-
-  // 빔 ↔ 포자
-  outer:
-  for(let i=Pg.shots.length-1;i>=0;i--){
-    const s=Pg.shots[i];
-    for(let j=Pg.balls.length-1;j>=0;j--){
-      const b=Pg.balls[j];
-      if(Math.abs(b.x-s.x)<=b.r+3 && b.y+b.r>=s.top && b.y-b.r<=PANG_H-46){
-        Pg.shots.splice(i,1);
-        Pg.balls.splice(j,1);
-        if(b.tier>1){
-          Pg.balls.push(makeBall(b.x-4,b.y,b.tier-1,-1));
-          Pg.balls.push(makeBall(b.x+4,b.y,b.tier-1, 1));
-          Pg.balls[Pg.balls.length-1].vy=-0.13;
-          Pg.balls[Pg.balls.length-2].vy=-0.13;
-        }
-        paintPangHud();
-        if(Pg.balls.length===0){ pangWin(); return; }
-        continue outer;
-      }
-    }
-  }
-
-  // 포자 ↔ 플레이어
-  if(Pg.inv<=0){
-    const py=PANG_H-16-Pg.ph, pl=Pg.px-Pg.pw/2, pr=Pg.px+Pg.pw/2;
-    for(const b of Pg.balls){
-      const cx=clamp(b.x,pl,pr), cy=clamp(b.y,py,PANG_H-16);
-      if(dist(b.x,b.y,cx,cy)<b.r){
-        Pg.hearts--; Pg.inv=1800; Pg.shots.length=0;
-        paintPangHud();
-        if(Pg.hearts<=0){ pangLose("포자에 너무 많이 부딪혔어요"); return; }
-        break;
-      }
-    }
-  }
-}
-
-function pangDraw(){
-  if(!Pg) return;
-  const c=Pg.ctx;
-  // 배경
-  const g=c.createLinearGradient(0,0,0,PANG_H);
-  g.addColorStop(0,'#2a2140'); g.addColorStop(.6,'#3b2f4e'); g.addColorStop(1,'#241d33');
-  c.fillStyle=g; c.fillRect(0,0,PANG_W,PANG_H);
-  // 배경 버섯 실루엣
-  c.fillStyle='rgba(255,255,255,.045)';
-  for(let i=0;i<6;i++){
-    const x=40+i*108, y=PANG_H-16;
-    c.beginPath(); c.ellipse(x,y-34,26,15,0,Math.PI,0); c.fill();
-    c.fillRect(x-5,y-34,10,34);
-  }
-  // 바닥
-  c.fillStyle='#4a3b2c'; c.fillRect(0,PANG_H-16,PANG_W,16);
-  c.fillStyle='#5f4c38'; c.fillRect(0,PANG_H-16,PANG_W,4);
-
-  // 정화빔
-  for(const s of Pg.shots){
-    const lg=c.createLinearGradient(0,s.top,0,PANG_H-46);
-    lg.addColorStop(0,'rgba(255,255,255,.95)'); lg.addColorStop(1,'rgba(143,209,79,.35)');
-    c.strokeStyle=lg; c.lineWidth=5; c.lineCap='round';
-    c.beginPath(); c.moveTo(s.x,PANG_H-46); c.lineTo(s.x,s.top); c.stroke();
-    c.fillStyle='#fff'; c.beginPath(); c.arc(s.x,s.top,4.5,0,7); c.fill();
-  }
-
-  // 포자
-  for(const b of Pg.balls){
-    const rg=c.createRadialGradient(b.x-b.r*.35,b.y-b.r*.4,b.r*.15,b.x,b.y,b.r);
-    rg.addColorStop(0,'#e3b7ff'); rg.addColorStop(.55,'#a86bc4'); rg.addColorStop(1,'#5e3670');
-    c.fillStyle=rg; c.beginPath(); c.arc(b.x,b.y,b.r,0,7); c.fill();
-    c.strokeStyle='rgba(255,255,255,.35)'; c.lineWidth=1.4; c.stroke();
-    c.fillStyle='rgba(40,20,50,.65)';
-    c.beginPath(); c.arc(b.x-b.r*.3,b.y-b.r*.1,b.r*.16,0,7); c.fill();
-    c.beginPath(); c.arc(b.x+b.r*.32,b.y+b.r*.05,b.r*.13,0,7); c.fill();
-  }
-
-  // 플레이어
-  const blink = Pg.inv>0 && Math.floor(Pg.inv/110)%2===0;
-  if(!blink){
-    const py=PANG_H-16-Pg.ph;
-    const p=PETS[S.petKey]||PETS.earth;
-    c.fillStyle='rgba(0,0,0,.35)';
-    c.beginPath(); c.ellipse(Pg.px,PANG_H-15,Pg.pw*.5,4,0,0,7); c.fill();
-    c.fillStyle='#4a4258';
-    c.beginPath(); c.roundRect(Pg.px-Pg.pw/2,py+14,Pg.pw,16,6); c.fill();
-    c.fillStyle=p.main;
-    c.beginPath(); c.arc(Pg.px,py+11,11,0,7); c.fill();
-    c.fillStyle='#2b2b35';
-    c.beginPath(); c.arc(Pg.px-3.6,py+9,1.9,0,7); c.fill();
-    c.beginPath(); c.arc(Pg.px+3.6,py+9,1.9,0,7); c.fill();
-    c.fillStyle='#f6c94f';
-    c.beginPath(); c.roundRect(Pg.px-2.4,py-6,4.8,9,2.4); c.fill();
-  }
-
-  // 안내
-  if(Pg.intro>0){
-    c.fillStyle='rgba(0,0,0,.55)'; c.fillRect(0,0,PANG_W,PANG_H);
-    c.fillStyle='#fbf6ea'; c.textAlign='center';
-    c.font='bold 26px sans-serif';
-    c.fillText('오염 포자를 모두 터뜨리자!',PANG_W/2,PANG_H/2-14);
-    c.font='16px sans-serif';
-    c.fillStyle='#f6c94f';
-    c.fillText('◀ ▶ 로 움직이고, 정화빔으로 쏘기',PANG_W/2,PANG_H/2+16);
-    c.fillStyle='rgba(251,246,234,.75)'; c.font='14px sans-serif';
-    c.fillText('큰 포자는 둘로 쪼개져요. 부딪히면 하트가 줄어요!',PANG_W/2,PANG_H/2+40);
-    c.textAlign='left';
-  }
-}
-
-function pangStop(){
-  if(Pg && Pg.raf){ cancelAnimationFrame(Pg.raf); Pg.raf=null; }
-}
-function pangWin(){
-  if(!Pg||Pg.over||S.modal!=='pang') return;
-  Pg.over=true; pangStop();
-  if(Tw.on) return miniWin('pgResult',
-    `남은 하트 <b>${Pg.hearts}</b> · 걸린 시간 <b>${Math.round(Pg.t/1000)}초</b>`);
-  const m=curMon();
-  S.defeatStreak=0;
-  const gaugeGot=addGauge(m.gauge);
-  S.gold+=m.gold; addExp(m.exp);
-  const drop=rollDrop(m);
-  autosave();
-  const last=S.monIdx>=CUR.monsters.length-1;
-  const host=$('pgResult'); if(!host) return;
-  host.innerHTML=`<div class="back on"><div class="sheet">
-    <div class="mhead"><span>🎉 ${m.name} 정화 완료!</span></div>
-    <div class="card"><div style="font-size:13.5px;line-height:1.9">
-      남은 하트 <b>${Pg.hearts}</b> · 걸린 시간 <b>${Math.round(Pg.t/1000)}초</b><br>
-      정화 게이지 <b style="color:var(--green)">+${gaugeGot}%</b><br>
-      골드 <b>+${m.gold}</b> · 경험치 <b>+${m.exp}</b><br>
-      ${drop?`장비 획득! <b style="color:var(--gold)">${drop.item.name}</b> (${GEAR_LABEL[drop.slot]}) — 자동 장착`
-            :'<span style="opacity:.6">장비는 나오지 않았어요</span>'}
-    </div></div>
-    <div class="dialogue"><div class="who">🧚 에코</div>${m.after}</div>
-    ${last?`<button class="btn" onclick="endBattleAll()">${CUR.name}${JRO(CUR.name)} 돌아가기</button>`
-          :`<div class="row">
-              <button class="btn" onclick="nextMonster()">다음 관문으로</button>
-              <button class="btn sec" onclick="pauseBattle()">💧 나가서 회복하기</button>
-            </div>`}
-  </div></div>`;
-}
-function pangLose(why){
-  if(Tw.on){ pangStop&&pangStop(); towerRetire('faint'); return; }
-  if(!Pg||Pg.over||S.modal!=='pang') return;
-  Pg.over=true; pangStop();
-  const m=curMon();
-  S.defeatStreak++;
-  const solace=Math.max(3,Math.round(m.exp*0.3));
-  addExp(solace);
-  autosave();
-  const host=$('pgResult'); if(!host) return;
-  host.innerHTML=`<div class="back on"><div class="sheet">
-    <div class="mhead"><span>💫 ${why}</span></div>
-    <div class="dialogue"><div class="who">🧚 에코</div>
-      괜찮아요! 다시 하면 돼요.<br>다음엔 <b>하트</b>를 하나 더 드릴게요! 💪</div>
-    <div class="card" style="font-size:13px;line-height:1.9">경험치 <b>+${solace}</b> 얻었어요</div>
-    <div class="row">
-      <button class="btn" onclick="retryPang()">다시 도전</button>
-      <button class="btn sec" onclick="respawn()">${CUR.name}${JRO(CUR.name)} 돌아가기</button>
-    </div>
-  </div></div>`;
-}
-function retryPang(){
-  const h=$('pgResult'); if(h) h.innerHTML='';
-  pangStop();
-  wipeIn(mountPang);
-}
-
+/* Plogging replaces the pang minigame; implementation: js/plogging.js. */
 
 /* ==========================================================
    미니게임 공용 층
    - 소닉3&너클즈 「블루 스피어」 차용 → 정화 구슬 (spheres)
    - 미니게임천국식 한 손 조작 타이밍 게임 → 딱 맞춰 멈추기 (timing)
-   - 기존 팡팡(pang)까지 총 3종, 테마마다 2종씩 배정한다
+   - 플로킹(pang) 내부 ID를 유지한다
    ========================================================== */
 
 /* 테마별 미니게임 겉모습 */
@@ -4052,7 +3758,7 @@ function launchMini(mode){
   return mountPang();
 }
 
-/* 미니게임 공용 결과 처리 (팡팡의 pangWin과 같은 보상 규칙) */
+/* 미니게임 공용 결과 처리 (플로킹의 pangWin과 같은 보상 규칙) */
 function miniWin(hostId, extraLine){
   if(InterludeRun)return finishInterlude(true,hostId,extraLine);
   const m=curMon();

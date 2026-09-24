@@ -7,7 +7,9 @@ const root = path.resolve(__dirname, '..');
 const fixtures = {
   A: { name: '플레이어A', code: 'EC9001', hair: 'messy', face: 'bright', outfit: 'cloak', skin: 'light', haircol: 'brown' },
   B: { name: '플레이어B', code: 'EC9002', hair: 'long', face: 'bold', outfit: 'robe', skin: 'deep', haircol: 'red' },
-  C: { name: '플레이어C', code: 'EC9003', hair: 'pony', face: 'calm', outfit: 'soccer', skin: 'tan', haircol: 'blonde' }
+  C: { name: '플레이어C', code: 'EC9003', hair: 'pony', face: 'calm', outfit: 'soccer', skin: 'tan', haircol: 'blonde' },
+  D: { name: '플레이어D', code: 'EC9004', hair: 'messy', face: 'calm', outfit: 'robe', skin: 'light', haircol: 'black' },
+  E: { name: '플레이어E', code: 'EC9005', hair: 'long', face: 'bright', outfit: 'cloak', skin: 'tan', haircol: 'brown' }
 };
 function controls() {
   document.addEventListener('DOMContentLoaded', () => {
@@ -36,6 +38,15 @@ function controls() {
     button('test equip', () => { if (!S.owned.includes('w2')) S.owned.push('w2'); equip('weapon', 'w2'); });
     button('test spirit', () => { S.petKey = 'water'; paintHud(); autosave(); });
     button('test progress', () => admSet('monIdx', Math.min(S.monIdx + 1, CUR.monsters.length - 1)));
+    const check = document.createElement('span');
+    button('test save/load', () => {
+      const before = { code: S.code, name: S.name, theme: S.themeId, level: S.lv };
+      const mode = Save.save(), loaded = Save.load(S.code);
+      check.textContent = ' save/load ' + (mode === 'disk' && loaded &&
+        loaded.code === before.code && loaded.name === before.name &&
+        loaded.themeId === before.theme && loaded.lv === before.level ? 'PASS' : 'FAIL');
+    });
+    box.append(check);
     const output = document.createElement('pre'); output.id = 'movement-test-result';
     output.style = 'white-space:pre-wrap;overflow-wrap:anywhere;max-height:120px;overflow:auto';
     box.append(output); document.body.append(box);
@@ -55,6 +66,29 @@ function controls() {
         frameP95: sorted[Math.floor(sorted.length * .95)]
       });
     }, 100);
+  });
+}
+function plogControls() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const box=document.createElement('div');
+    box.style='position:fixed;left:12px;top:90px;z-index:6000;background:#fff;color:#111;padding:5px;font:11px sans-serif';
+    function button(label,fn){const b=document.createElement('button');b.textContent=label;b.onclick=fn;box.append(b);}
+    button('test pang route',()=>{
+      if(S.modal==='pang')leaveBattle();
+      S.lv=Math.max(S.lv,10);enterTheme('river');
+      S.monIdx=2;S.battleDone=false;S.interludePending=null;S.encounterWon=false;
+      openModal('meet');
+    });
+    button('test goal result',()=>{
+      if(!Pg||!Pg.started||Pg.over)return;
+      Pg.npcs=[];Pg.trash=[];
+      for(let i=Pg.count;i<PANG_GOAL;i++)pangTrash('paper',Pg.px,Pg.py);
+      pangUpdate(16);
+    });
+    button('test time result',()=>{if(Pg&&Pg.started&&!Pg.over){Pg.t=Pg.limit-16;pangUpdate(16);}});
+    button('test other mini',()=>admMini('spheres'));
+    const detail=document.createElement('span');box.append(detail);document.body.append(box);
+    setInterval(()=>{detail.textContent=Pg?' x:'+Math.round(Pg.px)+' y:'+Math.round(Pg.py)+' count:'+Pg.count+' hearts:'+Pg.hearts:' idle';},200);
   });
 }
 const server = http.createServer(async (req, res) => {
@@ -80,7 +114,9 @@ const server = http.createServer(async (req, res) => {
           ';Wd.py=SPAWN.y+' + dy + ';render();</script><script defer src="https://cdn');
       }
       if (url.searchParams.has('no-cdn')) html = html.replace(/<script defer src="https:\/\/cdn[^>]+><\/script>/, '');
-      data = Buffer.from(html.replace('</body>', '<script>(' + controls.toString() + ')();</script></body>'));
+      const loadScript = url.searchParams.has('load35') ? '<script defer src="./tests/load35-browser.js"></script>' : '';
+      const plogScript = url.searchParams.has('plogging') ? '<script>(' + plogControls.toString() + ')();</script>' : '';
+      data = Buffer.from(html.replace('</body>', '<script>(' + controls.toString() + ')();</script>' + loadScript + plogScript + '</body>'));
     }
     res.writeHead(200, { 'Cache-Control': 'no-store', 'Content-Type': {
       '.html': 'text/html;charset=utf-8', '.js': 'application/javascript;charset=utf-8', '.css': 'text/css',

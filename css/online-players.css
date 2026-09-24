@@ -12,4 +12,4 @@
 .eco-online th:nth-child(4){width:22%}.eco-online th:nth-child(5){width:24%}
 .eco-online-me{background:rgba(143,209,79,.14)}
 .eco-online-empty{text-align:center!important;color:#e7e4d0;padding:20px!important}
-@media(max-width:680px){.hudbtns .eco-online-button{position:absolute;top:46px;right:10px;z-index:1;padding:5px 6px}.eco-online-sheet{padding:12px!important}.eco-online table{font-size:10px}.eco-online th,.eco-online td{padding:8px 4px}}
+@media(max-width:680px){.hudbtns .eco-online-button{position:absolute;top:46px;right:10px;z-index:1;padding:5px 6px}.eco-online-sheet{padding:12px!important}.eco-online table{min-width:450px;font-size:10px}.eco-online th,.eco-online td{padding:8px 4px}}
