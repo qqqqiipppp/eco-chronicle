@@ -32,6 +32,10 @@ function controls() {
     }));
     button('test simultaneous', () => setTimeout(() => { held = 'r'; until = performance.now() + 2000; }, 6000));
     button('test disconnect', () => window.ecoSupabase.client.realtime.disconnect());
+    button('test level', () => admSet('lv', S.lv + 1));
+    button('test equip', () => { if (!S.owned.includes('w2')) S.owned.push('w2'); equip('weapon', 'w2'); });
+    button('test spirit', () => { S.petKey = 'water'; paintHud(); autosave(); });
+    button('test progress', () => admSet('monIdx', Math.min(S.monIdx + 1, CUR.monsters.length - 1)));
     const output = document.createElement('pre'); output.id = 'movement-test-result';
     output.style = 'white-space:pre-wrap;overflow-wrap:anywhere;max-height:120px;overflow:auto';
     box.append(output); document.body.append(box);
@@ -66,8 +70,13 @@ const server = http.createServer(async (req, res) => {
       const fixture = fixtures[url.searchParams.get('fixture')];
       if (fixture) {
         const dx = fixture === fixtures.B ? 112 : 0, dy = fixture === fixtures.C ? -112 : 0;
+        const state = { petKey: fixture === fixtures.B ? 'water' : fixture === fixtures.C ? 'fire' : 'earth',
+          lv: fixture === fixtures.B ? 6 : fixture === fixtures.C ? 4 : 5,
+          exp: fixture === fixtures.B ? 400 : fixture === fixtures.C ? 200 : 280,
+          gear: { weapon: fixture === fixtures.B ? 'w1' : null, armor: fixture === fixtures.C ? 'a2' : null, helm: null, shoes: null },
+          monIdx: fixture === fixtures.B ? 1 : fixture === fixtures.C ? 2 : 0, scene: 'world' };
         html = html.replace('<script defer src="https://cdn', '<script>S=Object.assign(newState(),' + JSON.stringify(fixture) +
-          ',{petKey:"earth",lv:5,exp:280,scene:"world"});applyTheme("forest");Wd.px=SPAWN.x+' + dx +
+          ',' + JSON.stringify(state) + ');applyTheme("forest");Wd.px=SPAWN.x+' + dx +
           ';Wd.py=SPAWN.y+' + dy + ';render();</script><script defer src="https://cdn');
       }
       if (url.searchParams.has('no-cdn')) html = html.replace(/<script defer src="https:\/\/cdn[^>]+><\/script>/, '');

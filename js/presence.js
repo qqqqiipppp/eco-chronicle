@@ -15,7 +15,7 @@
     return window.ecoRemotePlayers ? window.ecoRemotePlayers.appearance(value) : {};
   }
 
-  function playerSignature(target) { return target.nickname + JSON.stringify(target.appearance); }
+  function playerSignature(target) { return target.nickname + JSON.stringify(target.appearance) + JSON.stringify(target.summary); }
 
   function show(status, theme, players) {
     var text = '접속 디버그 · ' + (theme ? 'eco-' + theme : '대기') + '\n' + status;
@@ -34,6 +34,7 @@
     if (!state || themes.indexOf(state.themeId) < 0) return null;
     var name = typeof state.name === 'string' ? state.name.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 24) : '';
     return { theme: state.themeId, nickname: name || '여행자-' + playerId.slice(0, 8),
+      summary: window.ecoOnlinePlayers ? window.ecoOnlinePlayers.summary(state) : {},
       appearance: look({ hair: state.hair, face: state.face, outfit: state.outfit,
         skin: state.skin, haircol: state.haircol, direction: 'south' }) };
   }
@@ -48,13 +49,15 @@
           if (!p || p.theme !== session.theme || typeof p.playerId !== 'string' ||
               p.playerId.length > 64 || typeof p.nickname !== 'string' || typeof p.joinedAt !== 'string') return;
           players.set(p.playerId, Object.assign({ playerId: p.playerId, nickname: p.nickname.slice(0, 24),
-            theme: p.theme, joinedAt: p.joinedAt }, look(p)));
+            theme: p.theme, joinedAt: p.joinedAt }, look(p),
+            window.ecoOnlinePlayers ? window.ecoOnlinePlayers.sanitize(p) : {}));
         });
       });
       var list = Array.from(players.values()).sort(function (a, b) { return a.playerId.localeCompare(b.playerId); });
       var signature = session.theme + JSON.stringify(list);
       show('온라인 ' + list.length + '명', session.theme, list);
       updateRemotePlayers(session.theme, list);
+      if (window.ecoOnlinePlayers) window.ecoOnlinePlayers.update(playerId, session.theme, list);
       if (window.ecoMovement) window.ecoMovement.members(list);
       if (signature !== lastOutput) {
         lastOutput = signature;
@@ -71,7 +74,7 @@
     session.tracking = true;
     try {
       var result = await session.channel.track(Object.assign({ playerId: playerId, nickname: target.nickname,
-        theme: session.theme, joinedAt: session.joinedAt }, target.appearance));
+        theme: session.theme, joinedAt: session.joinedAt }, target.appearance, target.summary));
       if (active !== session) return;
       if (result !== 'ok') throw new Error('track returned ' + result);
       session.nickname = target.nickname;
@@ -90,6 +93,7 @@
     active = null; // Ignore late sync/subscribe/track callbacks from this channel.
     if (window.ecoMovement) window.ecoMovement.detach();
     updateRemotePlayers(null, []);
+    if (window.ecoOnlinePlayers) window.ecoOnlinePlayers.update(playerId, null, []);
     lastOutput = '';
     if (!previous) return;
     console.info('[Presence] leaving eco-' + previous.theme);
@@ -143,6 +147,7 @@
           session.nickname = null;
           session.signature = null;
           updateRemotePlayers(null, []);
+          if (window.ecoOnlinePlayers) window.ecoOnlinePlayers.update(playerId, null, []);
           lastOutput = '';
           show('연결 끊김 · 재접속 대기', session.theme);
           fail(status + ' eco-' + session.theme, error);

@@ -1,0 +1,15 @@
+/* Scoped to the optional online roster. Existing HUD/modal styles remain intact. */
+.eco-online-sheet{width:min(760px,100%);max-height:min(540px,90%);min-height:0}
+.eco-online{display:flex;flex-direction:column;gap:9px;min-height:0;max-height:100%;font-family:'Gowun Dodum',sans-serif}
+.eco-online .mhead{gap:12px}
+.eco-online-sub{margin:0;color:#e7e4d0;font-size:12px}
+.eco-online-count{font-size:12px;color:#f2d89f}
+.eco-online-scroll{overflow:auto;min-height:0;max-height:min(390px,58vh);border:1px solid rgba(255,255,255,.16);border-radius:9px}
+.eco-online table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:12px}
+.eco-online th,.eco-online td{text-align:left;padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.11);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eco-online th{position:sticky;top:0;background:#173b35;color:#f2d89f;z-index:1}
+.eco-online th:nth-child(1){width:25%}.eco-online th:nth-child(2){width:17%}.eco-online th:nth-child(3){width:12%}
+.eco-online th:nth-child(4){width:22%}.eco-online th:nth-child(5){width:24%}
+.eco-online-me{background:rgba(143,209,79,.14)}
+.eco-online-empty{text-align:center!important;color:#e7e4d0;padding:20px!important}
+@media(max-width:680px){.hudbtns .eco-online-button{position:absolute;top:46px;right:10px;z-index:1;padding:5px 6px}.eco-online-sheet{padding:12px!important}.eco-online table{font-size:10px}.eco-online th,.eco-online td{padding:8px 4px}}
