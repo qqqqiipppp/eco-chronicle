@@ -25,7 +25,7 @@ let a=c.Pg=actor();
 c.pangKey('ArrowRight',true); // Before the intro starts, keys do nothing.
 assert.equal(a.keys.r,false);
 a.started=true;c.pangKey('ArrowRight',true);
-a.trash=[{kind:'bottle',x:116,y:100,dangerUntil:0}];
+a.trash=[{kind:'bottle',x:116,y:100}];
 c.pangUpdate(34);
 assert.ok(a.px>100 && a.px<112,'movement uses the existing local step');
 assert.equal(a.count,1,'contact collects litter');
@@ -55,12 +55,17 @@ a=c.Pg=actor();a.npcs=[{kind:'smoker',x:131,y:100,vx:0,vy:0,nextDrop:10000,perio
 c.pangUpdate(34);assert.equal(a.hearts,3,'foot hitbox does not punish a near miss');
 a.npcs[0].x=118;c.pangUpdate(34);assert.equal(a.hearts,2,'foot hitbox punishes body contact');
 
+a=c.Pg=actor();a.npcs=[{kind:'coffee',x:100,y:100,vx:0,vy:0,nextDrop:10000,period:3400}];
+c.pangUpdate(34);assert.equal(a.hearts,2,'coffee NPC body contact also costs one heart');
+a.px=100;a.py=100;c.pangUpdate(800);assert.equal(a.hearts,2,'continuous contact remains safe during immunity');
+a.px=100;a.py=100;c.pangUpdate(100);assert.equal(a.hearts,1,'contact after 900ms can cost one more heart');
+
 a=c.Pg=actor();a.npcs=[{kind:'smoker',x:300,y:300,vx:50,vy:20,nextDrop:10000,period:3000},
   {kind:'coffee',x:600,y:600,vx:-50,vy:-20,nextDrop:10000,period:3400}];
 c.pangUpdate(34);
 assert.ok(a.npcs[0].x>300 && a.npcs[1].x<600,'both nuisance characters patrol independently');
 
-a=c.Pg=actor();a.trash=Array.from({length:20},(_,i)=>({kind:'paper',x:100,y:100,dangerUntil:0}));
+a=c.Pg=actor();a.trash=Array.from({length:20},()=>({kind:'paper',x:100,y:100}));
 c.pangUpdate(34);
 assert.equal(a.count,20);assert.equal(a.over,true);assert.equal(S.encounterWon,true,'next encounter is unlocked');
 assert.equal(S.gold,29);assert.equal(exp,24);assert.equal(gauge,5);assert.equal(saved,1,'original reward and save run once');

@@ -87,8 +87,30 @@ function plogControls() {
     });
     button('test time result',()=>{if(Pg&&Pg.started&&!Pg.over){Pg.t=Pg.limit-16;pangUpdate(16);}});
     button('test other mini',()=>admMini('spheres'));
+    button('test npc collision',()=>{
+      if(!Pg||!Pg.started||Pg.over)return;
+      const n=Pg.npcs[0];Pg.target=null;Pg.keys={l:false,r:false,u:false,d:false};
+      Pg.px=n.x;Pg.py=n.y;Pg.inv=0;pangUpdate(16);
+    });
+    button('test npc lineup',()=>{
+      if(!Pg||!Pg.started||Pg.over)return;
+      Pg.npcs.forEach((n,i)=>{n.x=Pg.px+155+i*150;n.y=Pg.py+65;n.vx=i?-42:42;n.vy=0;n.drop=null;n.nextDrop=Pg.t+5000;});
+    });
+    button('test npc toss',()=>{
+      if(!Pg||!Pg.started||Pg.over)return;
+      Pg.npcs.forEach(n=>{n.nextDrop=Pg.t;n.drop=null;});pangUpdate(16);
+    });
+    button('test npc litter',()=>{
+      if(!Pg||!Pg.started||Pg.over)return;
+      Pg.npcs.forEach(n=>{if(n.drop)n.drop.start=Pg.t-330;});pangUpdate(16);
+    });
+    button('test collect litter',()=>{
+      if(!Pg||!Pg.started||Pg.over)return;
+      const t=Pg.trash.find(item=>item.kind==='butt'||item.kind==='cup');if(!t)return;
+      Pg.npcs.forEach(n=>{n.x=1200;n.y=850;});Pg.px=t.x;Pg.py=t.y;Pg.inv=0;pangUpdate(16);
+    });
     const detail=document.createElement('span');box.append(detail);document.body.append(box);
-    setInterval(()=>{detail.textContent=Pg?' x:'+Math.round(Pg.px)+' y:'+Math.round(Pg.py)+' count:'+Pg.count+' hearts:'+Pg.hearts:' idle';},200);
+    setInterval(()=>{detail.textContent=Pg?' x:'+Math.round(Pg.px)+' y:'+Math.round(Pg.py)+' count:'+Pg.count+' hearts:'+Pg.hearts+' drops:'+Pg.npcs.map(n=>n.kind+':'+(n.drop?'throw':'walk')).join(','):' idle';},200);
   });
 }
 const server = http.createServer(async (req, res) => {
