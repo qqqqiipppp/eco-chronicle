@@ -1,9 +1,21 @@
 /* The existing `pang` encounter ID now plays a self-contained plogging game.
    Only Pg is transient; rewards and saves still use the original game flow. */
 var PANG_W=960, PANG_H=540, PANG_FIELD_W=1700, PANG_FIELD_H=1080;
-var PANG_GOAL=20, PANG_LIMIT=75000;
+var PANG_GOAL=28, PANG_LIMIT=75000, PANG_INITIAL_TRASH=32, PANG_RETRY_BONUS=1, PANG_TRASH_GAP=68;
 var PANG_TRASH=['bottle','can','wrapper','bag','paper','cap'];
-var PANG_NPC_ART={smoker:'./assets/images/characters/plogging_smoker_sheet.png',coffee:'./assets/images/characters/plogging_coffee_sheet.png'};
+var PANG_NPC_ART={smoker:'./assets/images/characters/plogging_smoker_polish_sheet.png',coffee:'./assets/images/characters/plogging_coffee_polish_sheet.png',child:'./assets/images/characters/plogging_child_sheet.png'};
+var PANG_NPC_TIMING={smoker:{prepare:350,toss:750,release:550,duration:1100},
+  coffee:{prepare:450,toss:900,release:650,duration:1250}};
+// Generated art has uneven row spacing: crop at transparent gaps, not through shoes.
+var PANG_NPC_ROWS={smoker:[[0,309],[309,601],[601,877],[877,1146],[1147,1402]],
+  coffee:[[0,292],[292,573],[573,853],[853,1137],[1137,1466]]};
+// Bottom of each pair of shoes within its cell; detached litter is not an anchor.
+var PANG_NPC_FEET={smoker:[[.98058,.98058,.98382,.98382],[.98973,.99315,.98973,.99315],
+  [.99275,.99275,.99275,.99275],[1,1,1,1],[.98039,.98039,.98431,.98039]],
+  coffee:[[.97603,.97603,.97603,.97260],[.97509,.97509,.97509,.96797],
+  [.97143,.97143,.97143,.97143],[.97535,.97535,.97535,.97535],[.83283,.83283,.83283,.83283]],
+  child:[[.95221,.95221,.95934,.95934],[.94722,.94365,.94365,.94365],
+  [.93509,.93509,.93866,.93866],[.91583,.91583,.91940,.91940],[.86805,.86448,.87518,.87518]]};
 var PANG_DECOR=[
   ['pr_pine',72,128,126],['pr_round',240,170,126],['pr_rock',400,158,76],
   ['pr_bush',564,181,76],['pr_pine',801,127,132],['pr_flower',947,212,56],
@@ -14,8 +26,103 @@ var PANG_DECOR=[
   ['pr_bush',590,890,78],['pr_pine',670,970,134],['pr_rock',943,736,80],
   ['pr_flower',1035,901,56],['pr_round',1188,835,135],['pr_log',1354,769,82],
   ['pr_bush',1495,924,78],['pr_pine',1633,800,136],['pr_plant',329,1022,56],
-  ['pr_fence',141,661,58],['pr_fence',197,661,58]
+  ['pr_fence',141,661,58],['pr_fence',197,661,58],
+  ['pr_pine',490,530,132],['pr_rock',635,603,94],['pr_log',812,508,110],
+  ['pr_fence',1020,581,88],['pr_fence',1100,581,88],['pr_pine',1060,455,130],
+  ['pr_round',1290,562,132],['pr_rock',1460,640,88],
+  ['pr_fence',340,285,88],['pr_fence',420,285,88],['pr_bush',998,330,98]
 ];
+
+// Footprints use only solid lower portions: foliage and small flowers remain walkable.
+var PANG_FOOTPRINTS={pr_pine:[.22,.18],pr_round:[.22,.16],pr_rock:[.78,.34],
+  pr_bush:[.64,.24],pr_log:[.80,.22],pr_fence:[.94,.20]};
+var PANG_SCENERY_SLOT={pr_pine:0,pr_round:1,pr_rock:2};
+var PANG_SCENERY_FEET={forest:[.98214286,.98125,.96093750],river:[.97916667,.97916667,.94642857],
+  ocean:[.97159091,.97159091,.96093750],city:[.97115385,.97115385,.96093750],
+  air:[.97794118,.97794118,.96093750],climate:[.98214286,.98214286,.96875]};
+var PANG_PROP_FEET={pr_bush:.96212121,pr_log:.95192308,pr_fence:.96428571};
+function pangBlocked(x,y,obstacles,pad=0){
+  if(x<24||x>PANG_FIELD_W-24||y<24||y>PANG_FIELD_H-24)return true;
+  return (obstacles||[]).some(o=>x+10+pad>o.left&&x-10-pad<o.right&&y+5+pad>o.top&&y-8-pad<o.bottom);
+}
+function pangLineClear(x,y,tx,ty,obstacles,pad=0){
+  const steps=Math.max(1,Math.ceil(dist(x,y,tx,ty)/6));
+  for(let i=0;i<=steps;i++)if(pangBlocked(x+(tx-x)*i/steps,y+(ty-y)*i/steps,obstacles,pad))return false;
+  return true;
+}
+function pangBuildField(){
+  const obstacles=PANG_DECOR.flatMap(([key,x,y,size])=>{
+    const f=PANG_FOOTPRINTS[key];
+    return f?[{left:x-size*f[0]/2,right:x+size*f[0]/2,top:y-size*f[1],bottom:y,key}]:[];
+  });
+  // A small cached flood fill ensures collectible litter is on reachable ground.
+  const step=24,cols=Math.floor((PANG_FIELD_W-48)/step)+1,rows=Math.floor((PANG_FIELD_H-48)/step)+1;
+  const open=new Uint8Array(cols*rows),cells=new Uint8Array(cols*rows),indices=[];
+  for(let i=0;i<open.length;i++)open[i]=!pangBlocked(24+(i%cols)*step,24+Math.floor(i/cols)*step,obstacles,5);
+  const start=Math.round((Pg.py-24)/step)*cols+Math.round((Pg.px-24)/step);
+  if(open[start]){cells[start]=1;indices.push(start);}
+  for(let head=0;head<indices.length;head++){
+    const i=indices[head],cx=i%cols,cy=Math.floor(i/cols);
+    [[cx-1,cy],[cx+1,cy],[cx,cy-1],[cx,cy+1]].forEach(([nx,ny])=>{
+      if(nx<0||nx>=cols||ny<0||ny>=rows)return;
+      const j=ny*cols+nx;
+      if(open[j]&&!cells[j]&&pangLineClear(24+cx*step,24+cy*step,24+nx*step,24+ny*step,obstacles,5)){
+        cells[j]=1;indices.push(j);
+      }
+    });
+  }
+  return {obstacles,reach:{step,cols,rows,cells,indices}};
+}
+function pangAccessible(x,y,pad=5){
+  if(pangBlocked(x,y,Pg.obstacles,pad))return false;
+  const r=Pg.reach;if(!r)return true;
+  const cx=Math.round((x-24)/r.step),cy=Math.round((y-24)/r.step);
+  for(let oy=-1;oy<=1;oy++)for(let ox=-1;ox<=1;ox++){
+    const nx=cx+ox,ny=cy+oy;
+    if(nx>=0&&nx<r.cols&&ny>=0&&ny<r.rows&&r.cells[ny*r.cols+nx]&&
+      pangLineClear(x,y,24+nx*r.step,24+ny*r.step,Pg.obstacles,pad))return true;
+  }
+  return false;
+}
+function pangFreePoint(x,y,radius=54){
+  if(pangAccessible(x,y))return {x,y};
+  for(let r=18;r<=radius;r+=18)for(let j=0;j<12;j++){
+    const angle=j*Math.PI/6,tx=x+Math.cos(angle)*r,ty=y+Math.sin(angle)*r;
+    if(pangAccessible(tx,ty))return {x:tx,y:ty};
+  }
+  return null;
+}
+function pangMove(actor,xKey,yKey,dx,dy,npc=null){
+  const steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/6));
+  let hitX=false,hitY=false;
+  const blocked=(x,y)=>pangBlocked(x,y,Pg.obstacles)||(npc&&(Pg.npcs||[]).some(other=>
+    other!==npc&&Math.pow((x-other.x)/38,2)+Math.pow((y-other.y)/27,2)<1));
+  for(let i=0;i<steps;i++){
+    const x=clamp(actor[xKey]+dx/steps,24,PANG_FIELD_W-24);
+    if(blocked(x,actor[yKey]))hitX=true;else actor[xKey]=x;
+    const y=clamp(actor[yKey]+dy/steps,24,PANG_FIELD_H-24);
+    if(blocked(actor[xKey],y))hitY=true;else actor[yKey]=y;
+  }
+  return {hitX,hitY};
+}
+function pangCreateNpcs(){
+  const specs=[['smoker',510,470,174,.24,2200,5600],['coffee',730,660,180,3.7,3600,6200],
+    ['child',980,470,168,-.8,4200,7800],['smoker',1270,730,188,2.8,4800,5600],
+    ['coffee',1470,370,182,2.1,5400,6200],['child',320,240,176,.65,3100,7800]];
+  return specs.map(([kind,x,y,speed,angle,nextDrop,period],id)=>{
+    const p=pangFreePoint(x,y,90);
+    if(!p)throw new Error('Plogging NPC spawn has no reachable ground');
+    return {id,kind,x:p.x,y:p.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
+      nextDrop,period,turnAt:1100+id*240,drop:null,face:'south',moving:false,stride:0};
+  });
+}
+function pangNpcAction(n){
+  if(!n.drop)return n.moving?'walk':'idle';
+  const elapsed=Pg.t-n.drop.start;
+  if(n.kind==='child')return elapsed<500?'open':elapsed<1100?'eat':'toss';
+  const timing=PANG_NPC_TIMING[n.kind];
+  return elapsed<timing.prepare?'prepare':elapsed<timing.toss?'toss':'recover';
+}
 
 function pangHTML(){
   const theme=(S.themeId&&ECO_ART[S.themeId])?S.themeId:'forest';
@@ -27,7 +134,7 @@ function pangHTML(){
     <div class="pangwrap" style="background-image:url('${art}')"><canvas id="pangCanvas" width="${PANG_W}" height="${PANG_H}" aria-label="쓰레기를 줍는 플로킹 필드"></canvas>
       <div class="pang-intro" id="pgIntro"><div class="pang-intro-card"><h2>플로킹을 해보자</h2>
         <p>길에 버려진 쓰레기를 주워 깨끗하게 만들어 보세요!</p>
-        <p>이동하며 다양한 쓰레기를 모으세요.<br>쓰레기를 버리는 사람과 부딪히면 하트가 줄어요.<br>제한 시간 안에 최대한 많은 쓰레기를 수거해 보세요!</p>
+        <p>나무와 바위를 피해 쓰레기 ${PANG_GOAL}개를 모으세요.<br>돌아다니는 방해 NPC와 부딪히면 하트가 줄어요.<br>NPC가 버린 꽁초·컵·과자봉지도 안전하게 주울 수 있어요!</p>
         <button class="btn" type="button" onclick="pangStart()">시작하기</button></div></div>
       <div class="pang-message" id="pgMessage" aria-live="polite"></div></div>
     <div class="pangctrl"><div class="side" aria-label="이동 버튼">
@@ -44,15 +151,38 @@ function pangRandom(){
   return Pg.seed/4294967296;
 }
 function pangTrash(kind,x,y){
-  if(Pg.trash.length>=75)return;
-  Pg.trash.push({kind:kind,x:clamp(x,30,PANG_FIELD_W-30),y:clamp(y,30,PANG_FIELD_H-30)});
+  if(Pg.trash.length>=75)return null;
+  const p=pangFreePoint(clamp(x,30,PANG_FIELD_W-30),clamp(y,30,PANG_FIELD_H-30));
+  if(!p)return null;
+  const item={kind,x:p.x,y:p.y};Pg.trash.push(item);return item;
 }
 function pangScatter(){
-  for(let i=0;i<42;i++){
-    let x,y,tries=0;
-    do{x=55+pangRandom()*(PANG_FIELD_W-110);y=65+pangRandom()*(PANG_FIELD_H-130);tries++;}
-    while(tries<15 && (dist(x,y,Pg.px,Pg.py)<65 || Pg.trash.some(t=>dist(x,y,t.x,t.y)<34)));
-    pangTrash(PANG_TRASH[i%PANG_TRASH.length],x,y);
+  const solids=PANG_DECOR.filter(d=>PANG_FOOTPRINTS[d[0]]);
+  const zoneW=(PANG_FIELD_W-110)/3,zoneH=(PANG_FIELD_H-130)/2;
+  for(let i=0;i<PANG_INITIAL_TRASH;i++){
+    // Spread a smaller supply across six areas, including reachable obstacle edges.
+    const zone=i%6,left=55+(zone%3)*zoneW,top=65+Math.floor(zone/3)*zoneH;
+    const inZone=(x,y)=>x>=left&&x<left+zoneW&&y>=top&&y<top+zoneH;
+    const nearby=solids.filter(([,x,y])=>inZone(x,y-8));
+    const valid=(x,y)=>inZone(x,y)&&pangAccessible(x,y)&&dist(x,y,Pg.px,Pg.py)>=130&&
+      Pg.trash.every(t=>dist(x,y,t.x,t.y)>=PANG_TRASH_GAP)&&Pg.npcs.every(n=>dist(x,y,n.x,n.y)>=48);
+    let p=null;
+    for(let tries=0;tries<40&&!p;tries++){
+      let x=left+pangRandom()*zoneW,y=top+pangRandom()*zoneH;
+      if(i<16&&tries<3&&nearby.length){
+        const [key,ox,oy,size]=nearby[(Math.floor(i/6)+tries)%nearby.length];
+        x=ox+((i+tries)%2?1:-1)*(size*PANG_FOOTPRINTS[key][0]/2+32);y=oy-8;
+      }
+      if(valid(x,y))p={x,y};
+    }
+    if(!p&&Pg.reach){
+      const r=Pg.reach;
+      for(const idx of r.indices){
+        const x=24+(idx%r.cols)*r.step,y=24+Math.floor(idx/r.cols)*r.step;
+        if(valid(x,y)){p={x,y};break;}
+      }
+    }
+    if(p)pangTrash(PANG_TRASH[i%PANG_TRASH.length],p.x,p.y);
   }
 }
 function pangBind(target,type,handler){
@@ -66,13 +196,13 @@ function mountPang(){
   host.innerHTML=pangHTML();
   const canvas=$('pangCanvas'),ctx=canvas&&canvas.getContext('2d');
   if(!ctx){$('pgIntro').innerHTML='<div class="pang-intro-card"><h2>화면을 열지 못했어요</h2><button class="btn" onclick="leaveBattle()">돌아가기</button></div>';return;}
-  const extra=Math.min(2,S.defeatStreak||0);
+  const extra=Math.min(PANG_RETRY_BONUS,S.defeatStreak||0);
   Pg={canvas,ctx,px:340,py:550,face:'south',moving:false,keys:{l:false,r:false,u:false,d:false},target:null,
-    trash:[],npcs:[{kind:'smoker',x:480,y:470,vx:54,vy:27,nextDrop:2300,period:3000,turnAt:1400,drop:null},
-      {kind:'coffee',x:790,y:690,vx:-48,vy:33,nextDrop:3400,period:3400,turnAt:1900,drop:null}],
+    trash:[],npcs:[],
     count:0,hearts:3+extra,maxHearts:3+extra,inv:0,t:0,limit:PANG_LIMIT,started:false,over:false,
     raf:null,last:0,off:[],seed:(Date.now()>>>0)||1,imgs:{},trashArt:{},backdrop:null,backdropKey:'',message:'',messageUntil:0,cx:0,cy:0};
-  pangScatter();
+  const field=pangBuildField();Pg.obstacles=field.obstacles;Pg.reach=field.reach;
+  Pg.npcs=pangCreateNpcs();pangScatter();
   document.querySelectorAll('#pangRoot .pbtn').forEach(b=>{
     const k=b.dataset.p;
     pangBind(b,'pointerdown',e=>{e.preventDefault();if(!Pg||!Pg.started||Pg.over)return;
@@ -128,8 +258,7 @@ function pangDamage(reason,x,y){
   if(!Pg||Pg.inv>0||Pg.over)return;
   Pg.hearts--;Pg.inv=900;
   const d=dist(Pg.px,Pg.py,x,y)||1;
-  Pg.px=clamp(Pg.px+(Pg.px===x?1:(Pg.px-x)/d)*27,24,PANG_FIELD_W-24);
-  Pg.py=clamp(Pg.py+(Pg.py-y)/d*27,24,PANG_FIELD_H-24);
+  pangMove(Pg,'px','py',(Pg.px===x?1:(Pg.px-x)/d)*27,(Pg.py-y)/d*27);
   pangNote(reason);paintPangHud();
   if(Pg.hearts<=0)pangLose('heart');
 }
@@ -142,17 +271,21 @@ function pangUpdate(dt){
   if(a.t>=a.limit){paintPangHud();if(a.count>=PANG_GOAL)pangWin();else pangLose('time');return;}
   let dx=(a.keys.r?1:0)-(a.keys.l?1:0),dy=(a.keys.d?1:0)-(a.keys.u?1:0);
   if(!dx&&!dy&&a.target){dx=a.target.x-a.px;dy=a.target.y-a.py;if(Math.hypot(dx,dy)<9){a.target=null;dx=dy=0;}}
-  const d=Math.hypot(dx,dy);a.moving=d>0;
-  if(d){a.px=clamp(a.px+dx/d*285*dt/1000,24,PANG_FIELD_W-24);
-    a.py=clamp(a.py+dy/d*285*dt/1000,24,PANG_FIELD_H-24);
+  const d=Math.hypot(dx,dy),oldX=a.px,oldY=a.py;
+  if(d){pangMove(a,'px','py',dx/d*285*dt/1000,dy/d*285*dt/1000);
     a.face=Math.abs(dx)>Math.abs(dy)?(dx>0?'east':'west'):(dy>0?'south':'north');}
+  a.moving=dist(oldX,oldY,a.px,a.py)>.01;
   a.npcs.forEach(n=>{
+    const oldX=n.x,oldY=n.y;
     if(n.drop){
-      if(!n.drop.spawned&&a.t>=n.drop.start+330){
-        pangTrash(n.kind==='smoker'?'butt':'cup',n.x+(n.face==='west'?-22:22),n.y+9);
-        n.drop.spawned=true;pangNote('버려진 쓰레기를 다시 주워요!');
+      const child=n.kind==='child',timing=PANG_NPC_TIMING[n.kind];
+      const release=child?1350:timing.release,duration=child?1650:timing.duration;
+      if(!n.drop.spawned&&a.t>=n.drop.start+release){
+        const item=pangTrash(n.kind==='smoker'?'butt':child?'wrapper':'cup',
+          n.x+(n.face==='west'||n.face==='south'?-22:22),n.y+9);
+        n.drop.spawned=true;if(item)pangNote('버려진 쓰레기를 다시 주워요!');
       }
-      if(a.t>=n.drop.start+760){n.drop=null;n.nextDrop=a.t+n.period*(a.t>40000?.82:1);}
+      if(a.t>=n.drop.start+duration){n.drop=null;n.nextDrop=a.t+n.period*(a.t>40000?.82:1);}
     }else if(a.t>=n.nextDrop){
       n.drop={start:a.t,spawned:false};
     }else{
@@ -161,12 +294,16 @@ function pangUpdate(dt){
         const vx=n.vx,vy=n.vy;n.vx=vx*cos-vy*sin;n.vy=vx*sin+vy*cos;
         n.turnAt=a.t+1400+pangRandom()*1700;
       }
-      const speed=a.t>40000?1.23:1;
-      n.x+=n.vx*speed*dt/1000;n.y+=n.vy*speed*dt/1000;
-      if(n.x<55||n.x>PANG_FIELD_W-55)n.vx=-n.vx;
-      if(n.y<65||n.y>PANG_FIELD_H-65)n.vy=-n.vy;
-      n.x=clamp(n.x,55,PANG_FIELD_W-55);n.y=clamp(n.y,65,PANG_FIELD_H-65);
+      const speed=a.t>40000?1.08:1;
+      if((n.x<=55&&n.vx<0)||(n.x>=PANG_FIELD_W-55&&n.vx>0))n.vx=-n.vx;
+      if((n.y<=65&&n.vy<0)||(n.y>=PANG_FIELD_H-65&&n.vy>0))n.vy=-n.vy;
+      const hit=pangMove(n,'x','y',n.vx*speed*dt/1000,n.vy*speed*dt/1000,n);
+      if(hit.hitX)n.vx=-n.vx;
+      if(hit.hitY)n.vy=-n.vy;
+      if(hit.hitX||hit.hitY)n.turnAt=a.t+600;
     }
+    n.moving=dist(oldX,oldY,n.x,n.y)>.01;
+    n.stride=(n.stride||0)+dist(oldX,oldY,n.x,n.y);
     n.face=Math.abs(n.vx)>Math.abs(n.vy)?(n.vx<0?'west':'east'):(n.vy<0?'north':'south');
     if(pangNpcTouchesHero(a,n))pangDamage('조심해요! 방해 인물과 부딪혔어요!',n.x,n.y);
   });
@@ -196,24 +333,43 @@ function pangDrawHero(c){
   if(head&&head.complete&&head.naturalWidth)c.drawImage(head,x-42,y-78,84,84);
   c.restore();
 }
+function pangDrawShadow(c,x,y,w,h,opacity=1){
+  if(!Pg.shadowArt){
+    const art=document.createElement('canvas');art.width=64;art.height=24;
+    const sc=art.getContext('2d');
+    sc.translate(32,12);sc.scale(1,.375);
+    const gradient=sc.createRadialGradient(0,0,0,0,0,32);
+    gradient.addColorStop(0,'rgba(35,29,22,.30)');
+    gradient.addColorStop(.45,'rgba(35,29,22,.19)');
+    gradient.addColorStop(1,'rgba(35,29,22,0)');
+    sc.fillStyle=gradient;sc.beginPath();sc.arc(0,0,32,0,Math.PI*2);sc.fill();
+    Pg.shadowArt=art;
+  }
+  c.save();c.globalAlpha*=opacity;c.imageSmoothingEnabled=true;
+  c.drawImage(Pg.shadowArt,x-w/2,y-h/2,w,h);c.restore();
+}
 function pangDrawNpc(c,n){
-  const x=Math.round(n.x-Pg.cx),y=Math.round(n.y-Pg.cy),man=n.kind==='smoker';
+  const x=Math.round(n.x-Pg.cx),y=Math.round(n.y-Pg.cy),child=n.kind==='child';
   if(x<-90||y<-120||x>PANG_W+90||y>PANG_H+90)return;
   const img=pangImage(n.kind+'Sheet',PANG_NPC_ART[n.kind]);
   const col={south:0,north:1,west:2,east:3}[n.face]||0;
-  const dropTime=n.drop?Pg.t-n.drop.start:-1;
-  const row=n.drop?(dropTime>=170&&dropTime<650?2:0):
-    (Pg.started&&(n.vx||n.vy)&&Math.floor(Pg.t/170)%2?1:0);
-  c.fillStyle='rgba(45,39,31,.28)';c.beginPath();c.ellipse(x,y+3,20,6,0,0,Math.PI*2);c.fill();
+  const action=pangNpcAction(n);
+  const row=child?({idle:0,walk:Math.floor((n.stride||0)/30)%2,open:2,eat:3,toss:4}[action]):
+    ({idle:0,walk:Math.floor((n.stride||0)/30)%2,prepare:2,toss:3,recover:4}[action]);
+  pangDrawShadow(c,x,y+1,child?30:38,child?8:10);
   if(img&&img.complete&&img.naturalWidth){
-    const sw=img.naturalWidth/4,sh=img.naturalHeight/3;
-    c.drawImage(img,col*sw,row*sh,sw,sh,x-43,y-101,86,104);
+    const rows=PANG_NPC_ROWS[n.kind],sy=rows?rows[row][0]:row*img.naturalHeight/5;
+    const sw=img.naturalWidth/4,sh=rows?rows[row][1]-sy:img.naturalHeight/5,w=child?72:86;
+    const h=(child?88:104)*sh/(img.naturalHeight/5);
+    const feet=PANG_NPC_FEET[n.kind]?.[row]?.[col]||.90;
+    c.drawImage(img,col*sw,sy,sw,sh,x-w/2,y-feet*h,w,h);
   }
-  const label=man?'꽁초 버리는 아저씨':'컵 버리는 아가씨';
+  const label=n.kind==='smoker'?'꽁초 버리는 아저씨':child?'과자 먹는 어린이':'컵 버리는 아가씨';
   c.font='bold 13px "Do Hyeon",sans-serif';c.textAlign='center';
   const lw=c.measureText(label).width+16;
-  c.fillStyle='rgba(34,30,38,.86)';c.fillRect(x-lw/2,y-119,lw,22);
-  c.fillStyle='#fff4d5';c.fillText(label,x,y-103);
+  const labelY=y-(child?103:n.kind==='smoker'?134:119);
+  c.fillStyle='rgba(34,30,38,.86)';c.fillRect(x-lw/2,labelY,lw,22);
+  c.fillStyle='#fff4d5';c.fillText(label,x,labelY+16);
 }
 function pangTrashSprite(kind){
   if(Pg.trashArt[kind])return Pg.trashArt[kind];
@@ -305,6 +461,13 @@ function pangDrawScenery(c,a){
     if(!img||!img.complete||!img.naturalWidth)return;
     const natural=SPR_SIZE[ecoSceneryKey(key)]||SPR_SIZE[key]||[64,64];
     const h=size*natural[1]/natural[0];
+    const footprint=PANG_FOOTPRINTS[key];
+    if(footprint){
+      const slot=PANG_SCENERY_SLOT[key],feet=slot===undefined?PANG_PROP_FEET[key]:
+        (PANG_SCENERY_FEET[S.themeId]||PANG_SCENERY_FEET.forest)[slot];
+      pangDrawShadow(c,x+2,y-h*(1-feet)+1,size*footprint[0]+8,
+        key==='pr_fence'?5:key==='pr_pine'||key==='pr_round'?8:10,key==='pr_fence'?.55:.65);
+    }
     c.drawImage(img,Math.round(x-size/2),Math.round(y-h),size,h);
   });
 }
@@ -370,7 +533,7 @@ function pangLose(reason){
       ${reason==='heart'?'방해를 너무 많이 받았어요! 조심해서 다시 플로킹에 도전해 보세요.':'아직 치우지 못한 쓰레기가 남아 있어요.'}<br>
       다시 도전해서 더 깨끗하게 만들어 볼까요?</div>
     <div class="card">수거한 쓰레기: <b>${Pg.count}개</b><br>경험치 <b>+${solace}</b> 얻었어요.<br>
-      다음에는 하트를 하나 더 드릴게요!</div>
+      다시 도전하면 하트 ${3+PANG_RETRY_BONUS}개로 시작해요!</div>
     <div class="row"><button class="btn" onclick="retryPang()">다시 도전</button>
       <button class="btn sec" onclick="respawn()">${CUR.name}${JRO(CUR.name)} 돌아가기</button></div>
   </div></div>`;

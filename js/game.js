@@ -190,6 +190,7 @@ function newState(){
     water:5, wellDay:0, canLv:0,    // \ubb3c\ud1b5 \u00b7 \uc6b0\ubb3c\uc744 \ub9c8\uc9c0\ub9c9\uc73c\ub85c \uc4f4 \ub0a0
     seeds:{}, produce:{},  // 씨앗 · 거둔 산물 (지역이 바뀌어도 유지된다)
     npcDone:[],            // 이야기를 마친 NPC
+    ecoTechUnlocked:[], ecoTechQuests:{}, ecoTechSites:[], ecoTechFindings:[],
     duelWon:[],            // 겨루기에서 이긴 NPC
     shadowWon:false,       // 나 자신을 이겼는가
     farm:null,             // 화단 12칸 + 축사 6칸
@@ -449,10 +450,11 @@ function migrate(o){
   ['weapon','armor','helm','shoes'].forEach(k=>{ if(o.gear[k]===undefined) o.gear[k]=null; });
   // 예전 저장의 장비 번호가 새 목록에 없으면 벗긴다
   ['weapon','armor','helm','shoes'].forEach(k=>{
-    if(o.gear[k] && !(GEAR_ALL[k]||[]).some(i=>i.id===o.gear[k])) o.gear[k]=null;
+    if(o.gear[k] && !gearFind(k,o.gear[k])) o.gear[k]=null;
   });
   if(Array.isArray(o.owned)) o.owned=o.owned.filter(id=>
-    Object.keys(GEAR_ALL).some(k=>GEAR_ALL[k].some(i=>i.id===id)));
+    Object.keys(GEAR_ALL).some(k=>gearList(k).some(i=>i.id===id)));
+  ecoTechNormalize(o);
   if(!o.farm) o.farm=newFarm();
   if(!o.tower) o.tower={best:0,bestTime:0,runs:0,history:[]};
   if(!Array.isArray(o.tower.history)) o.tower.history=[];
@@ -1158,6 +1160,7 @@ function mNpc(){
     return head+`<div class="encounter">${npcArt(n)}</div>
       <div class="dialogue">고마워요! 배운 내용을 다시 연습해 볼까요?</div>
       <button class="btn" onclick="npcPractice()">퀴즈 다시 연습하기</button>
+      ${ecoTechNPCButton(n)}
       <button class="btn" onclick="closeModal()">돌아가기</button>`;
   }
   // 겨루기를 청하는 NPC — 이기기 전에는 퀴즈로 넘어가지 않는다
@@ -1310,6 +1313,7 @@ function mNpcEnd(){
       🎁 뽑기권 <b>+1</b>
     </div>
     <div class="note">${left? `이 지역에 아직 <b>${left}명</b>이 더 있어요` : '이 지역 사람들과 모두 이야기했어요! 🎉'}</div>
+    ${ecoTechNPCButton(n)}
     <button class="btn" onclick="closeModal()">돌아가기</button>`;
 }
 
@@ -2092,7 +2096,7 @@ function mStatus(){
           ${gearIco(i,30)}
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;${leg?'color:var(--gold)':''}">${leg?'✨ ':''}${i.name}</div>
-            <div style="font-size:11px;opacity:.7">${val}${leg&&i.desc?' · '+i.desc:''}</div></div>
+            ${gearEducation(i)}</div>
           ${on?'<span class="chip" style="flex:0 0 auto">착용 중</span>':''}</div>`;
       }).join('') : '<div class="note">가진 것이 없어요. 상점이나 뽑기로 구해 보세요.</div>'}
       <button class="btn sec" onclick="statPick(null)">닫기</button></div>`;
@@ -2711,6 +2715,7 @@ function worldHTML(){
       <div id="lifeLayer"></div>
       <div id="objLayer"></div>
       <div id="npcLayer"></div>
+      <div id="ecoTechLayer"></div>
       <div id="critLayer"></div>
       <div class="actor" id="pet"></div>
       <div class="actor" id="hero"></div>
@@ -2783,8 +2788,10 @@ function mountWorld(){
 
   $('dirtLayer').innerHTML=worldPathSVG();
 
+  const ecoMainReserved=ecoExplorationFutureObject();
   const blocked=(x,y)=>{
     for(const o of OBJS) if(dist(x,y,o.x,o.y)<o.r+52) return true;
+    if(ecoMainReserved&&dist(x,y,ecoMainReserved.x,ecoMainReserved.y)<ecoMainReserved.r+52)return true;
     for(let i=0;i<PATH.length;i++){
       const a=PATH[i],b=PATH[(i+1)%PATH.length];
       const L=dist(a.x,a.y,b.x,b.y); if(!L) continue;
@@ -2794,6 +2801,7 @@ function mountWorld(){
     return false;
   };
   Wd.solid=[];                      // 통과할 수 없는 소품 (바위·건물 등)
+  Wd.ecoScenery=[];                  // 지역 진입 때만 선택형 조사 구역의 빈 공간을 찾는다
   const place=(gen,count,layer,cls,kind)=>{
     const sd=SOLID_PROPS[kind];
     let html='',tries=0,n=0;
@@ -2803,7 +2811,9 @@ function mountWorld(){
       if(blocked(x,y)) continue;
       if(sd && dist(x,y-sd.dy,SPAWN.x,SPAWN.y)<sd.r+70) continue;    // 시작 지점 비우기
       if(sd && Wd.solid.some(o=>dist(x,y-sd.dy,o.x,o.y)<sd.r+o.r+10)) continue;
-      html+=`<div class="${cls}" style="left:${x}px;top:${y}px;z-index:${Math.floor(y)}">${gen()}</div>`;
+      const sceneryId='eco-scenery-'+Wd.ecoScenery.length;
+      html+=`<div class="${cls}" id="${sceneryId}" style="left:${x}px;top:${y}px;z-index:${Math.floor(y)}">${gen()}</div>`;
+      Wd.ecoScenery.push({x,y,r:sd?sd.r:28,id:sceneryId});
       if(sd) Wd.solid.push({x:x, y:y-sd.dy, r:sd.r,phase:layer.id});
       n++;
     }
@@ -2862,6 +2872,7 @@ function mountWorld(){
   paintMood();
   refreshObjs();
   paintNpcs();
+  ecoTechBuildPoints();
   startLoop();
   bgmUpdate();
   admBadge();
@@ -3030,11 +3041,18 @@ function syncStride(el,state,travel){
   state.moving=walking;
   el.classList.toggle('walk',walking);
   el.classList.add('stride-driven');
-  state.stride=(state.stride||0)+travel;
-  const frame=walking?1+Math.floor(state.stride/12)%8:0;
+  // Start each walk from the first step; keep each planted foot visible long enough
+  // to read instead of racing through the eight body frames.
+  state.stride=walking?(state.stride||0)+travel:0;
+  const frame=walking?1+Math.floor(state.stride/16)%8:0;
   const body=el.querySelector('.sprite:not(.head)'), avatar=el.querySelector('.avatar');
   if(body) body.style.backgroundPosition=(frame*12.5)+'% 0';
-  if(avatar) avatar.style.transform=walking?'translateY('+([0,-1,-2,-1,0,-1,-2,-1][frame-1])+'px)':'';
+  if(avatar){
+    const side=state.face==='west'||state.face==='east';
+    const weight=side?[0,1,1,0,0,-1,-1,0][frame-1]:0;
+    const lift=[0,0,-1,0,0,0,-1,0][frame-1];
+    avatar.style.transform=walking?`translate(${weight}px,${lift}px)`:'';
+  }
 }
 
 function tick(dt){
@@ -3055,7 +3073,7 @@ function tick(dt){
     const wx=clamp(Wd.px+dx,30,W-30), wy=clamp(Wd.py+dy,110,H-30);
     const solid=solidCheck(Wd.solid,Wd.px,Wd.py);
     const stuckInNpc=hitNpc(Wd.px,Wd.py);      // 이미 겹쳐 있으면 빠져나갈 수 있게
-    const hit=(x,y)=> solid(x,y) || (!stuckInNpc && hitNpc(x,y));
+    const hit=(x,y)=> solid(x,y) || ecoExplorationHit(x,y,Wd.px,Wd.py) || (!stuckInNpc && hitNpc(x,y));
     if(!hit(wx,Wd.py)) Wd.px=wx;      // 가로만 먼저
     if(!hit(Wd.px,wy)) Wd.py=wy;      // 세로는 따로 → 벽 타기
     let nf=Wd.face;
@@ -3116,6 +3134,7 @@ function checkZones(){
     btn.textContent = npcDone(Nd.near.id) ? `${nm}${J(nm,'과','와')} 다시 이야기`
                                           : `${nm}${J(nm,'과','와')} 이야기`;
   }
+  ecoTechNearUI();
 }
 
 function trigger(o){
@@ -3130,6 +3149,7 @@ function trigger(o){
   else if(o.type==='shop')   openModal('shop');
 }
 function doAction(){
+  if(ecoTechOpenPoint()) return;
   const o=Wd.near;
   if(Nd.near && (!o || dist(Wd.px,Wd.py,Nd.near.x,Nd.near.y) < dist(Wd.px,Wd.py,o.x,o.y))){
     talkNpc(Nd.near); return;
@@ -3190,13 +3210,13 @@ function mMeet(){
     <div class="encounter">
       <div style="filter:drop-shadow(0 6px 8px rgba(0,0,0,.5))">${monsterSVG(curMonIdx(),132)}</div>
       <div class="mon" style="margin-top:6px">${m.name}</div>
-      <div class="note" style="margin-top:2px">${plogging?'플로킹 관문 · 쓰레기 20개 수거':`${kindTxt} · 체력 ${ms.hp} · 공격 ${ms.atk}`}</div>
+      <div class="note" style="margin-top:2px">${plogging?`플로킹 관문 · 쓰레기 ${PANG_GOAL}개 수거`:`${kindTxt} · 체력 ${ms.hp} · 공격 ${ms.atk}`}</div>
     </div>
     <div class="dialogue"><div class="who">🧚 에코</div>${m.meet}<br>
       ${plogging?'플로킹으로 주변을 깨끗하게 만들어 볼까요?':'싸우러 <b>들어갈까요?</b>'}</div>
     ${!plogging&&lowHp?`<div class="hpwarn">⚠️ 지금 체력이 <b>${S.hpCur} / ${st.hpMax}</b> 예요.<br>
         <b>배우는 샘</b>에서 샘물을 마시거나 <b>가게</b>에서 회복약을 사면 좋아요.</div>`:''}
-    ${S.defeatStreak>0?`<div class="note" style="color:var(--gold)">${plogging?`다시 도전하면 하트 +${Math.min(2,S.defeatStreak)}`:`🧚 에코의 도움 +${Math.round(Math.min(S.defeatStreak,BLESS_MAX)*BLESS_STEP*100)}% 를 받고 들어가요`}</div>`:''}
+    ${S.defeatStreak>0?`<div class="note" style="color:var(--gold)">${plogging?`다시 도전하면 하트 +${Math.min(PANG_RETRY_BONUS,S.defeatStreak)}`:`🧚 에코의 도움 +${Math.round(Math.min(S.defeatStreak,BLESS_MAX)*BLESS_STEP*100)}% 를 받고 들어가요`}</div>`:''}
     <div class="row">
       <button class="btn" onclick="acceptBattle()">${plogging?'🧹 플로킹 시작':'⚔️ 들어간다'}</button>
       <button class="btn sec" onclick="declineBattle()">지금은 그냥 지나간다</button>
@@ -3648,8 +3668,9 @@ function showWin(){
     <div class="card"><div style="font-size:13.5px;line-height:1.9">
       정화 게이지 <b style="color:var(--green)">+${B.gaugeGot}%</b><br>
       골드 <b>+${m.gold}</b> · 경험치 <b>+${m.exp}</b><br>
-      ${B.drop?`장비 획득! <b style="color:var(--gold)">${B.drop.item.name}</b> (${GEAR_LABEL[B.drop.slot]}) — 자동 장착`
+      ${B.drop?`장비 획득! <b style="color:var(--gold)">${B.drop.item.name}</b> (${GEAR_LABEL[B.drop.slot]}) — ${S.gear[B.drop.slot]===B.drop.item.id?'장착 중':'가방에 보관'}`
               :'<span style="opacity:.6">장비는 나오지 않았어요</span>'}
+      ${B.drop?gearEducation(B.drop.item):''}
     </div></div>
     <div class="card" style="text-align:center;font-size:13px">
       남은 체력 <b style="color:${B.hp<=B.hpMax*0.35?'var(--danger)':'var(--cream)'}">${Math.max(0,B.hp)} / ${B.hpMax}</b>
@@ -3793,8 +3814,9 @@ function miniWin(hostId, extraLine){
       ${extraLine?extraLine+'<br>':''}
       정화 게이지 <b style="color:var(--green)">+${gaugeGot}%</b><br>
       골드 <b>+${m.gold}</b> · 경험치 <b>+${m.exp}</b><br>
-      ${drop?`장비 획득! <b style="color:var(--gold)">${drop.item.name}</b> (${GEAR_LABEL[drop.slot]}) — 자동 장착`
+      ${drop?`장비 획득! <b style="color:var(--gold)">${drop.item.name}</b> (${GEAR_LABEL[drop.slot]}) — ${S.gear[drop.slot]===drop.item.id?'장착 중':'가방에 보관'}`
             :'<span style="opacity:.6">장비는 나오지 않았어요</span>'}
+      ${drop?gearEducation(drop.item):''}
     </div></div>
     <div class="dialogue"><div class="who">🧚 에코</div>${m.after}</div>
     ${last?`<button class="btn" onclick="endBattleAll()">${CUR.name}${JRO(CUR.name)} 돌아가기</button>`
@@ -4217,6 +4239,8 @@ function drawModal(){
     case 'rsell':  inner=mSell(); break;
     case 'npc':        inner=mNpc(); break;
     case 'npcEnd':     inner=mNpcEnd(); break;
+    case 'ecoQuest':   inner=mEcoQuest(); break;
+    case 'ecoPoint':   inner=mEcoPoint(); break;
     case 'sideNpc':    inner=mSideNpc(); break;
     case 'shadowMeet': inner=mShadowMeet(); break;
     case 'shadowWin':  inner=mShadowWin(); break;
@@ -5687,12 +5711,12 @@ function mShop(){
       const eq=S.gear[slot]===it.id;
       const stat = it.atk?`공격 +${it.atk}`: it.def?`방어 +${it.def}`:`기력 +${it.sp}`;
       void stat;
-      return `<div class="itemrow">
+      return `<div class="itemrow gear-shop-row">
         <div class="ico" style="display:flex;align-items:center;justify-content:center">${gearIco(it,32)}</div>
-        <div class="tx"><b>${it.name}</b><small>${GEAR_LABEL[slot]} · ${stat}</small></div>
+        <div class="tx"><b>${it.name}</b><small>${GEAR_LABEL[slot]}</small>${gearEducation(it)}</div>
         ${owned
           ? `<button ${eq?'disabled':''} onclick="equip('${slot}','${it.id}')">${eq?'장착중':'장착'}</button>`
-          : `<button ${S.gold<it.price?'disabled':''} onclick="buyGear('${slot}','${it.id}')">${it.price}G</button>`}
+          : `<button ${S.gold<gearShopPrice(it)?'disabled':''} onclick="buyGear('${slot}','${it.id}')">${gearShopPrice(it)}G</button>`}
       </div>`;
     }).join('')).join('');
   const sellRows=Object.entries(S.mats).filter(([k,v])=>v>0).map(([k,v])=>
@@ -5701,6 +5725,7 @@ function mShop(){
       <button onclick="sellMat('${k}')">1개 팔기</button></div>`).join('')
     || `<div class="note">팔 수 있는 재료가 없어요</div>`;
   return `<div class="mhead"><span>🛒 떠돌이 상인</span><span style="font-size:13px">🪙 ${S.gold}</span></div>
+    ${gearNoticeHTML()}
     <div class="dialogue"><div class="who">🧑‍🌾 상인</div>
       어서 오게! 좋은 물건이 많다네.<br>안 쓰는 재료는 내가 사 주지.</div>
     <div class="itemrow" style="border-color:var(--green)">
@@ -5725,14 +5750,19 @@ function mShop(){
     <button class="btn sec" onclick="closeModal()">나가기</button>`;
 }
 function buyGear(slot,id){
-  const it=gearFind(slot,id);
-  if(it && S.gold>=it.price && !S.owned.includes(it.id)) playSfx('spend');
-  if(!it||S.gold<it.price||S.owned.includes(id)) return;
-  S.gold-=it.price; S.owned.push(id); S.gear[slot]=id;
+  const it=(GEAR_ALL[slot]||[]).find(i=>i.id===id),price=gearShopPrice(it);
+  if(!it||!Number.isFinite(price)||S.gold<price||S.owned.includes(id)) return;
+  playSfx('spend');
+  S.gold-=price; S.owned.push(id); S.gear[slot]=id;
+  gearNotice={slot,id,title:'구입하고 장착했어요'};
   toast(`${it.name} 구입 & 장착!`);
   drawModal(); paintHud(); autosave();
 }
-function equip(slot,id){ S.gear[slot]=id; toast("장착했어요"); drawModal(); paintHud(); autosave(); }
+function equip(slot,id){
+  if(!gearFind(slot,id)||!S.owned.includes(id))return;
+  S.gear[slot]=id;gearNotice={slot,id,title:'장착했어요'};
+  toast("장착했어요"); drawModal(); paintHud(); autosave();
+}
 function sellMat(k){
   if(matCount(k)<=0) return;
   S.mats[k]--; S.gold+=CUR.mats[k].price;
@@ -5769,11 +5799,10 @@ function legendReveal(it, worn, curName){
       <div class="lgTag">전설</div>
       <div class="lgIco">${shopIcon(it.ico, 92)}</div>
       <div class="lgName">${it.name}</div>
-      <div class="lgDesc">${it.desc}</div>
-      <div class="lgStat">${it.atk?('공격 +'+it.atk):(it.def?('방어 +'+it.def):('기력 +'+it.sp))}</div>
+      ${gearEducation(it)}
       ${worn ? '<div class="lgWear">바로 장착했어요</div>'
              : '<div class="lgWear off">지금 낀 '+curName+'보다 기본 능력이 낮아 가방에 넣었어요<br>'
-               + '효과를 쓰려면 상점에서 바꿔 끼세요</div>'}
+               + '효과를 쓰려면 가방에서 바꿔 끼세요</div>'}
       <button class="btn" onclick="legendClose()">좋아!</button>
     </div>`;
   document.body.appendChild(host);
@@ -5823,10 +5852,10 @@ function rollGacha(){
     const wear = val(it)>=val(cur);
     if(wear) S.gear[it.slot]=it.id;
     gachaResult=`✨ <b style="color:var(--gold)">전설 · ${it.name}</b><br>
-      <span style="font-size:12px">${it.desc}</span>`
+      ${gearEducation(it)}`
       + (wear ? '' : `<br><span style="font-size:11.5px;opacity:.75">
           지금 낀 ${cur.name}보다 기본 능력이 낮아 가방에 넣었어요<br>
-          효과를 쓰고 싶으면 상점에서 바꿔 끼세요</span>`);
+          효과를 쓰고 싶으면 가방에서 바꿔 끼세요</span>`);
     drawModal(); paintHud(); autosave();
     legendReveal(it, wear, cur?cur.name:'');
     toast(`✨ 전설 장비 <b>${it.name}</b>!`);
@@ -5877,6 +5906,7 @@ function rollGacha(){
         S.gold+=back;
         txt=`${it.name} (이미 있어 골드 ${back}으로 바꿨어요)`;
       }
+      txt+=gearEducation(it);
     }
   }
   gachaResult=txt;
@@ -5909,6 +5939,8 @@ function mBag(){
     </div>
     <div style="font-family:'Do Hyeon',sans-serif;font-size:13.5px;color:var(--gold)">장착 중</div>
     <div class="chips">${gearTxt}</div>
+    ${gearBagHTML()}
+    ${ecoTechBagHTML()}
     <div style="font-family:'Do Hyeon',sans-serif;font-size:13.5px;color:var(--gold)">배운 기술 <span style="font-size:11px;opacity:.7">(노란색 = ${PETS[S.petKey].name} 고유)</span></div>
     <div class="chips">${skills}</div>
     <div style="font-family:'Do Hyeon',sans-serif;font-size:13.5px;color:var(--gold)">재료</div>

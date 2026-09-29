@@ -1,0 +1,37 @@
+.gear-education{display:flex;align-items:flex-start;gap:12px;font-size:13px;line-height:1.65;text-align:left;color:var(--cream);font-family:inherit;margin-top:9px;overflow-wrap:anywhere;white-space:normal}
+.gear-copy{flex:1;min-width:0}.gear-copy>div+div{margin-top:7px}
+.gear-icon{display:block;width:64px;height:64px;object-fit:contain;image-rendering:pixelated}
+.gear-portrait{display:flex;align-items:center;justify-content:center;flex:0 0 68px;width:68px;height:68px;background:#122e29;border:2px solid #7d8e66;border-radius:4px;box-shadow:inset 0 0 0 1px #203f35}
+.gear-stat{font-size:13px;color:#c1e8bd}.gear-special{color:#eed697;border-left:2px solid #bda569;padding-left:8px}.gear-use{color:#ddd9c5}.gear-use b{color:#b9c4ad}
+.gear-info{min-width:0;overflow-wrap:anywhere}.gear-info.legend{border-color:#ae9462}.legend .gear-portrait{border-color:#baa56d;background:#343627}
+.gear-info summary{cursor:pointer;color:var(--gold);line-height:1.5;list-style:none}.gear-info summary::-webkit-details-marker{display:none}
+.gear-info .btn{margin-top:11px}.gear-info[open]>summary{border-bottom:1px solid #7d8e6644;padding-bottom:12px;margin-bottom:12px}
+.gear-card-head{display:flex;align-items:center;gap:12px}.gear-card-copy{flex:1;min-width:0}.gear-card-head b,.gear-card-head strong{display:block;font-family:'Do Hyeon',sans-serif;font-size:17px;font-weight:400;color:#f4dfaf}
+.gear-card-kicker{display:block;color:#b6c8b3;font-size:11px;letter-spacing:.3px;margin-bottom:3px}.gear-status{display:inline-block;margin-top:4px;font-size:11px;color:#bdc8b3}.gear-status.equipped{color:#a9dfb2}.gear-fold{margin-left:auto;color:#bbb893;font-size:18px;flex:0 0 16px;text-align:center}details[open]>summary .gear-fold{transform:rotate(180deg)}
+.gear-shop-row{align-items:flex-start;flex-wrap:wrap;gap:12px}.gear-shop-row .tx{flex:1 1 180px}.gear-shop-row .ico{flex:0 0 64px;width:64px;padding:3px;background:#142f29;border:2px solid #76845d;border-radius:4px;box-sizing:content-box}.gear-shop-row .ico>div{width:64px!important;height:64px!important}
+.gear-shop-row .gear-portrait,.eqRow .gear-portrait,.lgCard .gear-portrait{display:none}.gear-shop-row .gear-education,.eqRow .gear-education{margin-top:5px}
+.eqRow>div:first-child[style*="background-image"]{width:48px!important;height:48px!important;flex:0 0 48px}.eqBox>div[style*="background-image"]{width:44px!important;height:44px!important}
+.lgCard{max-height:90vh;overflow-y:auto}
+.eco-section-title{font-family:'Do Hyeon',sans-serif;font-size:16px;color:var(--gold);margin-top:12px;padding-bottom:6px;border-bottom:1px solid #849b6744}
+.eco-tech-card{font-size:13px;line-height:1.65;overflow-wrap:anywhere}
+.eco-tech-card.locked{border-color:#6e7560}.eco-tech-card.acquired{border-color:#789764}
+.eco-tech-summary{display:flex;align-items:center;gap:12px;cursor:pointer;list-style:none}.eco-tech-summary::-webkit-details-marker{display:none}
+.eco-tool-icon{display:block;width:64px;height:64px;object-fit:contain;image-rendering:pixelated;flex:0 0 auto}
+.eco-tool-slot{display:flex;align-items:center;justify-content:center;flex:0 0 68px;width:68px;height:68px;background:#182f28;border:2px solid #849466;border-radius:4px;box-shadow:inset 0 0 0 1px #234735}.eco-tech-card.locked .eco-tool-slot{background:#29332b;border-color:#6c7760}
+.eco-tech-copy{flex:1;min-width:0}.eco-tech-copy strong{display:block;font-family:'Do Hyeon',sans-serif;font-size:16px;font-weight:400;color:#f1dcad}.eco-tech-copy small{display:block;font-size:11px;color:#b1c4b0;margin-top:3px}
+.eco-tool-state{display:inline-block;font-size:11px;line-height:1.5;border:1px solid #7d8a6944;background:#324337;padding:2px 6px;margin-top:5px;border-radius:3px;color:#c9d2ba}.eco-tool-state.acquired{color:#c5ecc0;border-color:#7caa7944;background:#2d503b}.eco-tool-state.researching{color:#f3daa5;background:#494733}.eco-tool-state.locked{color:#c0c4b4;background:#353a30}
+.eco-tech-card[open]>.eco-tech-summary{border-bottom:1px solid #84946644;padding-bottom:12px;margin-bottom:10px}
+.eco-tool-heading{justify-content:flex-start;gap:12px;line-height:1.3}.eco-tool-heading .eco-tool-icon{width:56px;height:56px}.eco-tool-heading>span{min-width:0}.eco-tool-heading small{display:block;font-family:inherit;font-size:11px;line-height:1.5;color:#b9c7ae;margin-bottom:3px}
+.eco-tool-button{display:flex;align-items:center;justify-content:center;gap:8px}.eco-tool-button .eco-tool-icon{width:32px;height:32px}
+.eco-tech-card p{margin:6px 0}
+.eco-tech-card button{white-space:normal}
+.eco-sites{margin:6px 0;padding-left:22px;font-size:13px;line-height:1.8}
+.eco-world-point{position:absolute;transform:translate(-50%,-100%);pointer-events:none;text-align:center;width:120px;color:#fff0d2;font-size:10px;line-height:1.35}
+.eco-world-point .eco-pin{position:relative;display:flex;align-items:center;justify-content:center;width:40px;height:33px;margin:auto;border:2px solid #927148;border-top-color:#c6a775;border-radius:3px;background:#29483a;box-shadow:inset 0 0 0 1px #4e6650,0 1px 0 #533d2b}
+.eco-pin .eco-tool-icon{width:32px;height:32px}.eco-pin:before,.eco-pin:after{content:"";position:absolute;width:2px;height:2px;background:#dfbc7c;top:2px}.eco-pin:before{left:2px}.eco-pin:after{right:2px}
+.eco-sign-mark{position:absolute;bottom:-2px;right:-5px;width:14px;height:14px;border:1px solid #ceb477;border-radius:3px;background:#665638;color:#fff1bd;line-height:14px;font-size:10px;font-weight:bold}.eco-sign-mark.done{background:#476342;color:#d3efb7}
+.eco-world-point .eco-point-name{position:absolute;display:none;left:50%;top:100%;transform:translateX(-50%);width:max-content;max-width:126px;box-sizing:border-box;margin:3px auto 0;background:#654d34;border:1px solid #ac8655;padding:2px 5px;border-radius:2px;box-shadow:inset 0 1px 0 #c19b6633;color:#ffedc5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eco-world-point.near .eco-point-name{display:block}
+.eco-sign-post{display:block;position:relative;width:6px;height:10px;margin:auto;background:#886440;border-left:2px solid #b78b55;border-right:2px solid #513d29;box-sizing:border-box}.eco-sign-shadow{position:absolute;bottom:-2px;left:50%;width:26px;height:5px;transform:translateX(-50%);border-radius:50%;background:#263d3038}
+.eco-world-point.near .eco-pin{border-color:#e8cc8d;background:#3d5d45}.eco-world-point.open .eco-pin{background:#39523b}.eco-marker-discovery .eco-pin{border-color:#8c9970;background:#334b3c}
+@media(max-width:600px){.gear-education{font-size:12px;gap:9px}.gear-icon,.eco-tool-icon{width:56px;height:56px}.gear-portrait,.eco-tool-slot{flex-basis:60px;width:60px;height:60px}.gear-card-head,.eco-tech-summary{gap:9px}.gear-card-head b,.gear-card-head strong{font-size:16px}.gear-shop-row{gap:9px}.gear-shop-row .ico{flex-basis:52px;width:52px}.gear-shop-row .ico>div{width:52px!important;height:52px!important}.gear-shop-row .tx{flex-basis:120px}.gear-shop-row button{margin-left:auto}.gear-stat,.eco-tech-card{font-size:12px}.eco-tech-copy strong{font-size:15px}.eco-world-point{width:130px}.eco-world-point .eco-point-name{max-width:126px}.eco-tool-heading .eco-tool-icon{width:48px;height:48px}}
