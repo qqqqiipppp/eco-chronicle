@@ -1663,7 +1663,7 @@ function mAdminPanel(){
       <button class="btn sec" onclick="admMini('spheres')">🔵 칸 채우기</button>
       <button class="btn sec" onclick="admMini('timing')">✦ 정령 바운스</button></div>
     <div class="row"><button class="btn sec" onclick="admMini('match')">🧩 정화 퍼즐</button>
-      <button class="btn sec" onclick="admMini('runner')">➜ 정화 질주</button>
+      <button class="btn sec" onclick="admMini('runner')">🐾 동물 돌봄 대작전</button>
       <button class="btn sec" onclick="admMini('math')">➗ 수학</button></div>
     <div class="row"><button class="btn sec" onclick="admReset()">퀘스트 되돌리기</button>
       <button class="btn sec" onclick="admOff()">관리자 끄기</button></div>
@@ -3718,6 +3718,7 @@ function respawn(){
 function closeBattleDom(){
   stopBattleView();
   arcStop();
+  animalCareStop();
   const h=$('modalHost'); if(h) h.innerHTML='';
 }
 function leaveBattle(){
@@ -4021,10 +4022,10 @@ function rnPaintHero(){
   if(url) el.style.backgroundImage = `url('${url}')`;
 }
 
-// runner mode keeps existing encounters and reward routing.
-function mountRunner(){ arcMount('runner'); }
+// The runner ID stays in saves and encounter routing; its screen is animal care.
+function mountRunner(){ animalCareMount(); }
 function retryRunner(){ mountRunner(); }
-function rnStop(){ arcStop(); }
+function rnStop(){ animalCareStop(); }
 
 /* 정화 구슬: 기존 퍼즐 유지 */
 var Sp=null;

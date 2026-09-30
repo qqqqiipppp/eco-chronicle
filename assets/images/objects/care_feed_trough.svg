@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="96" viewBox="0 0 128 96" image-rendering="pixelated">
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="64" cy="86" rx="48" ry="6" fill="#29352b" opacity=".24"/>
+    <!-- A low wooden tray, wide enough to read as an animal feeder. -->
+    <path d="M15 46L23 76Q28 82 64 83Q99 82 105 76L113 46Z" fill="#684b38" stroke="#49392f" stroke-width="3"/>
+    <path d="M21 53L28 74Q40 79 64 79Q88 79 100 74L107 53Z" fill="#ad794f"/>
+    <path d="M27 56L34 75L44 78L40 56Z" fill="#c89460"/>
+    <path d="M50 58L51 79L59 80L59 59Z" fill="#d3a36e"/>
+    <path d="M69 58L69 80L77 79L79 57Z" fill="#c18b5b"/>
+    <path d="M89 55L84 78L94 75L101 54Z" fill="#d5a570"/>
+    <path d="M16 46Q18 37 64 37Q110 37 113 46L108 55Q93 62 64 62Q35 62 21 55Z" fill="#4e3a2e" stroke="#49392f" stroke-width="3"/>
+    <!-- Golden hay and grain sit visibly inside the open rim. -->
+    <path d="M23 47Q31 39 64 39Q98 39 106 47Q94 55 64 56Q34 56 23 47Z" fill="#c69b5b"/>
+    <path d="M27 47L35 42L39 46L47 41L51 46L59 40L64 46L71 41L75 47L84 42L88 47L98 43L104 48L93 52L76 54L54 54L36 52Z" fill="#e4c47b"/>
+    <path d="M34 48l13-5m-5 8 17-9m-7 10 16-8m-1 8 15-9m-1 9 13-7" stroke="#f5db98" stroke-width="2.5"/>
+    <path d="M29 47l10 4m30-10 11 8m9-5 10 3" stroke="#ab7b43" stroke-width="2"/>
+    <path d="M45 47h3m12 3h3m20-3h3m-13 4h2" stroke="#8d603b" stroke-width="3"/>
+    <!-- Thick front rim, reinforcing bands, and small metal fasteners. -->
+    <path d="M18 48Q27 59 64 60Q101 59 111 48" fill="none" stroke="#d9aa73" stroke-width="4"/>
+    <path d="M19 50Q30 62 64 63Q98 62 110 50" fill="none" stroke="#553c2d" stroke-width="2"/>
+    <path d="M24 65Q42 73 64 73Q87 73 104 65M29 77Q43 83 64 83Q86 83 99 77" fill="none" stroke="#514639" stroke-width="4"/>
+    <path d="M27 66h3m72-1h3M32 78h3m59-1h3" stroke="#ddc08a" stroke-width="2"/>
+    <path d="M18 82l-5 2m98-3 5 2" stroke="#55714e" stroke-width="3"/>
+  </g>
+</svg>

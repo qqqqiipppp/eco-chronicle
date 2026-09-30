@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="96" viewBox="0 0 128 96" image-rendering="pixelated">
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="65" cy="86" rx="47" ry="6" fill="#29352d" opacity=".25"/>
+    <!-- Wide, low wooden trough with a clearly visible water surface. -->
+    <path d="M17 43L24 76Q28 83 64 84Q100 83 105 76L112 43Z" fill="#684b39" stroke="#49392f" stroke-width="3"/>
+    <path d="M23 52L29 75Q41 80 64 80Q89 80 100 75L106 52Z" fill="#a5744d"/>
+    <path d="M29 54L34 75L43 78L39 54Z" fill="#d2a06a"/>
+    <path d="M48 55L50 79L59 80L58 55Z" fill="#bd875a"/>
+    <path d="M68 55L68 80L77 79L79 54Z" fill="#d4a370"/>
+    <path d="M89 53L85 78L94 76L101 51Z" fill="#bd875a"/>
+    <path d="M17 43Q20 35 64 35Q108 35 112 43L108 52Q94 59 64 59Q34 59 21 52Z" fill="#4c3c32" stroke="#49392f" stroke-width="3"/>
+    <path d="M23 43Q29 38 64 38Q99 38 106 43Q101 53 64 55Q29 54 23 43Z" fill="#66a9aa" stroke="#365b60" stroke-width="2"/>
+    <path d="M27 44Q41 39 67 41L48 45L35 46Z" fill="#a9dada"/>
+    <path d="M62 46L78 42L94 44L82 47Z" fill="#b9e7de"/>
+    <path d="M43 49l10 1m20 0 13-2" stroke="#e0f6e5" stroke-width="2"/>
+    <!-- Raised rim, two dark bands, and inset fasteners give it weight. -->
+    <path d="M18 45Q25 55 64 56Q103 55 111 45" fill="none" stroke="#d2a46c" stroke-width="4"/>
+    <path d="M18 46Q26 57 64 59Q102 57 110 46" fill="none" stroke="#583e2e" stroke-width="2"/>
+    <path d="M24 64Q41 72 64 72Q87 72 104 64M28 77Q42 83 64 83Q86 83 100 77" fill="none" stroke="#4e453a" stroke-width="4"/>
+    <path d="M27 65h3m72-1h3M31 77h3m61 0h3" stroke="#d0bb89" stroke-width="2"/>
+    <path d="M22 80l-4 2m87-2 5 2" stroke="#42624e" stroke-width="3"/>
+  </g>
+</svg>
