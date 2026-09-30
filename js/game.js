@@ -940,8 +940,16 @@ function npcStepAll(dt){
 
 /* 사람 NPC는 주인공 레이어를 조합해 만든다 (그림을 따로 굽지 않는다) */
 function npcArt(n){
-  if(typeof ECO_HUMAN!=='undefined' && ECO_HUMAN[n.id]) return `<div class="eco-npc-visual"><div class="eco-npc-art" style="background-image:url('${ECO_HUMAN[n.id]}')"></div></div>`;
-  if(typeof ECO_NPC!=='undefined' && ECO_NPC[n.sp]) return `<div class="eco-npc-visual"><div class="eco-npc-art" style="background-image:url('${ECO_NPC[n.sp]}')"></div>${typeof ECO_WALK!=='undefined'&&ECO_WALK[n.sp]?`<div class="eco-npc-walk" style="background-image:url('${ECO_WALK[n.sp]}')"></div>`:''}</div>`;
+  const wrap={forest_s2:'dryad',forest_s3:'deerkin',forest_s4:'shroomfae',forest_h7:'sapling',forest_h8:'birdwatcher',forest_h9:'hiker'}[n.id];
+  if(typeof ECO_HUMAN!=='undefined' && ECO_HUMAN[n.id]){
+    if(wrap) return `<div class="eco-npc-visual forest-npc-wrap forest-npc-${wrap}"><div class="eco-npc-art" style="--forest-sprite:url('${new URL(ECO_HUMAN[n.id],document.baseURI).href}')"></div></div>`;
+    return `<div class="eco-npc-visual"><div class="eco-npc-art" style="background-image:url('${ECO_HUMAN[n.id]}')"></div></div>`;
+  }
+  if(typeof ECO_NPC!=='undefined' && ECO_NPC[n.sp]){
+    const artStyle=wrap?'--forest-sprite':'background-image';
+    const artUrl=src=>wrap?new URL(src,document.baseURI).href:src;
+    return `<div class="eco-npc-visual${wrap?` forest-npc-wrap forest-npc-${wrap}`:''}"><div class="eco-npc-art" style="${artStyle}:url('${artUrl(ECO_NPC[n.sp])}')"></div>${typeof ECO_WALK!=='undefined'&&ECO_WALK[n.sp]?`<div class="eco-npc-walk" style="${artStyle}:url('${artUrl(ECO_WALK[n.sp])}')"></div>`:''}</div>`;
+  }
   if(n.sp){
     const wk=n.walk && SPRITES[n.sp+'_w'];
     return `<div class="npcsp anim2 idle" style="background-image:url('${SPRITES[n.sp]}')"></div>`

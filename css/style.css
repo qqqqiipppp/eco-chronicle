@@ -684,6 +684,17 @@ input.namefield:focus{border-color:var(--gold)}
 .eco-arena{background-size:1024px 1024px;background-repeat:repeat;image-rendering:pixelated}
 .eco-npc-visual{position:relative;width:88px;height:88px;image-rendering:pixelated;transform-origin:center bottom}
 .eco-npc-walk{position:absolute;inset:0;background-repeat:no-repeat;background-size:400% 100%;image-rendering:pixelated;display:none}
+/* These forest sheets wrap their bottom rows to the top; rejoin them in place. */
+.forest-npc-dryad{--forest-shift:11px;--forest-body-cut:13px;--forest-feet-top:75px;--forest-feet-offset:71px}
+.forest-npc-deerkin{--forest-shift:4px;--forest-body-cut:6px;--forest-feet-top:82px;--forest-feet-offset:78px}
+.forest-npc-shroomfae{--forest-shift:10px;--forest-body-cut:12px;--forest-feet-top:76px;--forest-feet-offset:72px}
+.forest-npc-sapling{--forest-shift:8px;--forest-body-cut:10px;--forest-feet-top:78px;--forest-feet-offset:74px}
+.forest-npc-birdwatcher{--forest-shift:5px;--forest-body-cut:7px;--forest-feet-top:81px;--forest-feet-offset:77px}
+.forest-npc-hiker{--forest-shift:6px;--forest-body-cut:8px;--forest-feet-top:80px;--forest-feet-offset:76px}
+.forest-npc-wrap .eco-npc-art{position:relative}
+.forest-npc-wrap .eco-npc-art::before,.forest-npc-wrap .eco-npc-art::after,.forest-npc-wrap .eco-npc-walk::before,.forest-npc-wrap .eco-npc-walk::after{content:"";position:absolute;inset:0;background-image:var(--forest-sprite);background-size:inherit;background-repeat:no-repeat;background-position-x:inherit;image-rendering:pixelated}
+.forest-npc-wrap .eco-npc-art::before,.forest-npc-wrap .eco-npc-walk::before{background-position-y:calc(-1 * var(--forest-shift));clip-path:inset(4px 0 var(--forest-body-cut) 0)}
+.forest-npc-wrap .eco-npc-art::after,.forest-npc-wrap .eco-npc-walk::after{background-position-y:var(--forest-feet-offset);clip-path:inset(var(--forest-feet-top) 0 2px 0)}
 .npc.walking .eco-npc-walk{display:block}
 .npc.walking .eco-npc-art{visibility:hidden}
 .actor.stride-driven .avatar,.actor.stride-driven.walk .avatar{animation:none}
