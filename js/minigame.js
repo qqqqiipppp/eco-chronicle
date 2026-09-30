@@ -131,7 +131,7 @@ function arcHTML(a){
   <div class="arc-track"><i id="arcTrack"></i></div>
   <div class="arc-stage arc-wait"><canvas id="arcCanvas" tabindex="0" width="960" height="480" aria-label="${runner?'점프와 슬라이드로 달리는 정화 코스':'발판을 타고 오르는 정령 코스'}"></canvas>
    <div id="arcOverlay" class="arc-overlay"><div class="arc-intro"><small>${a.clean>=.5?'정화된 지역':'오염된 지역'} · 최고 ${record.toLocaleString()}점</small><h3>${runner?'정화의 빛을 따라 달려요':'하늘 끝 쉼터를 향해!'}</h3>
-    <p>${runner?'점프는 두 번! 길게 누르면 더 높이 뜁니다.<br>낮은 장애물은 넘고, 높이 걸린 덩굴은 슬라이드.<br>빛을 모아 대시하면 오염물을 뚫을 수 있어요.':'좌우로 움직이면 발판에서 자동으로 뛰어요.<br>발판 중앙에 착지해 콤보를 쌓고 빛을 모아요.<br>스프링과 정령 도약으로 높은 쉼터에 도전해요.'}</p>
+    <p>${runner?'점프는 두 번까지 할 수 있어요. 낮은 장애물은 넘고, 높은 덩굴은 슬라이드해요.<br>빛을 모으면 대시할 수 있어요.':'좌우로 발판에 착지하면 자동으로 뛰어요.<br>빛을 모아 정령 도약으로 더 높이 올라가요.'}</p>
     <div class="arc-legend"><span>${runner?'↑ / Space 점프':'← → / A D 이동'}</span><span>${runner?'↓ / S 슬라이드':'스프링 · 금빛 발판'}</span><span>${runner?'X / Shift 대시':'Space / X 도약'}</span></div>
     <button class="btn" id="arcStart">도전 시작</button></div></div>
    <div id="arcMessage" class="arc-message" aria-live="polite"></div>

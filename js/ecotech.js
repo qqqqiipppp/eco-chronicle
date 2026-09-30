@@ -107,13 +107,16 @@ function ecoTechSurveyList(t){
 function mEcoQuest(){
   const t=ecoTechQuestContext();if(!t)return '<div class="note">NPC에게 다시 말을 걸어 주세요.</div><button class="btn" onclick="closeModal()">닫기</button>';
   const q=S.ecoTechQuests[t.id],owned=ecoTechHas(t.id);
+  const next=owned?`✅ ${t.name}을 사용할 수 있어요.<p>${t.use}</p>사용 장소: ${t.gate}`
+    :!q?t.quest:ecoTechQuestReady(t)?`조사를 마쳤어요. ${NQ.n.nm}에게 보고하세요.`
+    :t.order?'정수 순서를 맞춰 보세요.':`${t.surveys.length}곳을 조사하세요. (${q.surveyed.length}/${t.surveys.length})`;
   return `<div class="mhead eco-tool-heading">${ecoTechIcon(t)}<span><small>생태기술</small>${t.name}</span></div>
-    <div class="dialogue"><div class="who">${esc(NQ.n.nm)}</div>${NQ.n.talk}<p>${t.edu}</p></div>
-    <div class="card eco-tech-card">${owned?`✅ ${t.name}을 사용할 수 있어요.<p>${t.use}</p>사용 장소: ${t.gate}`:t.quest}</div>
+    <div class="dialogue"><div class="who">${esc(NQ.n.nm)}</div>${NQ.n.talk}${owned?`<p>${t.edu}</p>`:''}</div>
+    <div class="card eco-tech-card">${next}</div>
     ${!owned&&q?ecoTechSurveyList(t):''}
     ${!owned&&q&&t.order&&!q.orderDone?`<div class="card eco-tech-card">선택한 순서: ${EcoTech.order.join(' → ')||'아직 없어요'}</div><div class="row">${['여과','응집','소독','침전'].map(s=>`<button class="btn sec" ${EcoTech.order.includes(s)?'disabled':''} onclick="ecoTechChooseStep('${s}')">${s}</button>`).join('')}</div>`:''}
     ${EcoTech.message?`<div class="note" role="status">${EcoTech.message}</div>`:''}
-    ${owned?'':!q?'<button class="btn" onclick="ecoTechAccept()">생태기술 퀘스트 받기</button>':ecoTechQuestReady(t)?'<button class="btn" onclick="ecoTechClaim()">조사 보고하고 기술 받기</button>':'<div class="note">조사를 마치면 이 NPC에게 돌아와 주세요.</div>'}
+    ${owned?'':!q?'<button class="btn" onclick="ecoTechAccept()">생태기술 퀘스트 받기</button>':ecoTechQuestReady(t)?'<button class="btn" onclick="ecoTechClaim()">조사 보고하고 기술 받기</button>':''}
     <button class="btn sec" onclick="S.modal='npc';drawModal()">기존 이야기로</button><button class="btn sec" onclick="closeModal()">탐험 계속하기</button>`;
 }
 function ecoTechBagHTML(){

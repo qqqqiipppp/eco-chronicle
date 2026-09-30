@@ -472,8 +472,8 @@ function autosave(){
 }
 function doSave(){
   const mode=Save.save();
-  if(mode==='disk')      toast(`저장 완료! 내 번호 <b>${S.code}</b><br><span style="font-size:11px">다음 시간에 이 번호로 이어서 해요</span>`);
-  else if(mode==='mem')  toast(`저장했어요 (이 브라우저는 저장 공간이 막혀 있어요)<br>번호 <b>${S.code}</b>`);
+  if(mode==='disk')      toast(`저장했어요! 내 번호: <b>${S.code}</b><br><span style="font-size:11px">다음에도 같은 태블릿에서 이어할 수 있어요.</span>`);
+  else if(mode==='mem')  toast('이 브라우저에서는 저장할 수 없어요. 선생님께 알려 주세요.');
   else                   toast("아직 저장할 것이 없어요");
 }
 
@@ -1158,7 +1158,8 @@ function mNpc(){
       <span style="font-size:12px;color:rgba(251,246,234,.6)">${n.role}</span></div>`;
   if(done&&!NQ.practice){
     return head+`<div class="encounter">${npcArt(n)}</div>
-      <div class="dialogue">고마워요! 배운 내용을 다시 연습해 볼까요?</div>
+      <div class="dialogue">${n.talk}</div>
+      <div class="note">문제를 다시 풀어 볼까요?</div>
       <button class="btn" onclick="npcPractice()">퀴즈 다시 연습하기</button>
       ${ecoTechNPCButton(n)}
       <button class="btn" onclick="closeModal()">돌아가기</button>`;
@@ -1166,13 +1167,10 @@ function mNpc(){
   // 겨루기를 청하는 NPC — 이기기 전에는 퀴즈로 넘어가지 않는다
   if(n.duel && !duelWon(n.id)){
     return head+`<div class="encounter">${npcArt(n)}</div>
-      <div class="dialogue"><div class="who">⚔️ ${n.nm}</div>
-        말로만 지키겠다는 사람은 많았지.<br>
-        <b>네게 정말 지킬 힘이 있는지</b> 내가 보아야겠다.<br>
-        <span style="opacity:.75">한 판 겨루자. 다치지 않게 봐줄 테니 걱정 말고.</span></div>
+      <div class="dialogue"><div class="who">⚔️ ${n.nm}</div>${n.talk}</div>
+      <div class="note">먼저 나와 겨뤄 볼래요? 져도 다시 도전할 수 있어요.</div>
       <div class="card" style="font-size:12.5px;line-height:1.8">
-        내 체력 <b>${S.hpCur} / ${baseStats().hpMax}</b> · 기력 <b>${S.spCur}</b><br>
-        <span style="opacity:.7">져도 잃는 것은 없어요. 다시 도전할 수 있어요.</span>
+        내 체력 <b>${S.hpCur} / ${baseStats().hpMax}</b> · 기력 <b>${S.spCur}</b>
       </div>
       <button class="btn" onclick="startDuel()">겨뤄 보기</button>
       <button class="btn sec" onclick="closeModal()">다음에요</button>`;
@@ -1199,6 +1197,7 @@ function mNpc(){
       onclick="npcAnswer(${i})" ${picked!=null?'disabled':''}>${i+1}. ${t}</button>`;
   }).join('');
   return head+`<div class="encounter" style="padding-bottom:2px">${npcArt(n)}</div>
+    ${NQ.idx===0&&!NQ.practice&&picked==null?`<div class="dialogue">${n.talk}</div>`:''}
     <div class="card" style="font-size:14.5px;line-height:1.7">${q.q}</div>
     <div style="font-size:11.5px;opacity:.6;text-align:right">문제 ${NQ.idx+1} / ${n.q.length}</div>
     ${opts}
@@ -1551,6 +1550,7 @@ function mAdmin(){
 /* 켜면 게임 전체를 열어 둔다 */
 function admApply(){
   Adm.on = true;
+  document.body.classList.add('admin-active');
   if(!S || !S.code){                       // 제목 화면에서 켰다면 판을 새로 만든다
     S = newState();
     S.name = '관리자'; S.grade = 5; S.code = makeCode();
@@ -1629,9 +1629,13 @@ function admBadge(){
 /* 검사할 때 쓰는 도구 상자 */
 function admPanel(){ S.modal='adminPanel'; drawModal(); }
 function mAdminPanel(){
+  const net=window.ecoMultiplayer && window.ecoMultiplayer.getStats();
+  const sup=window.ecoSupabase;
   return `<div class="mhead"><span>🔧 관리자 도구</span>
       <span style="font-size:12px;color:rgba(251,246,234,.6)">Lv${S.lv} · 🪙${S.gold}</span></div>
-    <div class="note">버그를 찾기 위한 화면이에요. 아이들에게는 보이지 않습니다.</div>
+    <div class="note">빌드 ${ECO_BUILD_ID} · 지역 ${esc(S.themeId)} · 저장 ${esc(S.code||'-')}<br>
+      Supabase ${esc(sup&&sup.status||'대기')} · 채널 ${esc(net&&net.theme?'eco-'+net.theme:'없음')} · 연결 ${esc(net&&net.status||'대기')}<br>
+      접속 ${net&&net.onlinePlayers||0}명 · 원격 ${net&&net.remotePlayers||0}명 · 재연결 ${net&&net.reconnectCount||0}회</div>
     <div class="row"><button class="btn sec" onclick="admGo('forest')">숲</button>
       <button class="btn sec" onclick="admGo('river')">강</button>
       <button class="btn sec" onclick="admGo('ocean')">바다</button></div>
@@ -1687,6 +1691,7 @@ function admReset(){
 }
 function admOff(){
   Adm.on=false;
+  document.body.classList.remove('admin-active');
   const b=$('admBadge'); if(b) b.remove();
   closeModal();
   toast('관리자 모드를 껐어요');
@@ -2482,26 +2487,25 @@ function render(){
 function pgTitle(){
   const last=Save.last();
   const warn = Save.ok()? '' :
-    `<div class="note" style="color:var(--danger)">이 브라우저는 저장 공간이 막혀 있어요.<br>시크릿 모드를 끄면 이어하기가 됩니다.</div>`;
+    `<div class="note" style="color:var(--danger)">이 브라우저에서는 저장할 수 없어요. 선생님께 알려 주세요.</div>`;
   return `<div class="page"><div class="inner" style="justify-content:center;flex:1">
     <div class="title-emblem" aria-hidden="true"><img src="${SPRITES.obj_altar}" alt=""></div>
-    <h1 class="title">에코 크로니클</h1>
-    <div class="sub">Echo Chronicle · 6개 지역을 되살리는 환경 정화 모험</div>
-    <div class="build-label">${ECO_BUILD_ID} · 전투와 미니게임 모험</div>
+    <h1 class="title">환경 원정대</h1>
+    <div class="sub">6개 지역을 탐험하며 환경 문제를 해결해 보세요.</div>
     <div style="height:6px"></div>
     <div class="col">
       <button class="btn" onclick="startNew()">새로 시작하기</button>
       ${last?`<button class="btn sec" onclick="quickLoad('${esc(last)}')">이어하기 (${esc(last)})</button>`:''}
     </div>
     <div class="card" style="margin-top:4px">
-      <div style="font-size:12.5px;color:rgba(251,246,234,.7);margin-bottom:6px;text-align:center">다른 번호로 이어하기</div>
+      <div style="font-size:12.5px;color:rgba(251,246,234,.7);margin-bottom:6px;text-align:center">다른 저장 불러오기</div>
       <div class="row">
         <input class="namefield" id="codeInput" maxlength="6" placeholder="EC0000" style="flex:1;text-align:center;letter-spacing:3px">
         <button class="btn sec" style="flex:0 0 auto;padding:12px 18px" onclick="openLoad()">불러오기</button>
       </div>
     </div>
     ${warn}
-    <div class="note" style="margin-top:4px">태블릿은 가로로 놓고 해요 📱</div>
+    <div class="note" style="margin-top:4px">태블릿을 가로로 놓아 주세요.</div>
     <div style="text-align:center;margin-top:2px">
       <button class="tinybtn" onclick="admOpen()" style="opacity:.55">🔧 관리자 모드</button>
     </div>
@@ -2533,11 +2537,10 @@ function pgName(){
     <h1 class="title" style="font-size:26px">이름 정하기</h1>
     <div class="dialogue">
       <div class="who">🧚 에코</div>
-      안녕하세요! 저는 정령 <b>에코</b>예요.<br>
-      당신을 뭐라고 부를까요?
+      원정대에서 사용할 이름을 정하세요.
     </div>
     <input class="namefield" id="nameInput" maxlength="8" placeholder="이름 또는 별명">
-    <div class="dialogue">몇 학년인가요?<br>학년에 맞는 <b>수학 문제</b>로 재료를 모으게 돼요 🧮</div>
+    <div class="dialogue">학년을 골라 주세요. 수학 문제의 난이도가 달라져요.</div>
     <div class="toolbar">${[4,5,6].map(g=>`<div class="tool gradebtn ${g===gradePick?'on':''}" data-g="${g}" onclick="setGrade(${g})">
         <div class="ti">${g}</div><div class="tn">초등 ${g}학년</div></div>`).join('')}</div>
     <button class="btn" onclick="submitName()">등록하기</button>
@@ -2596,7 +2599,7 @@ function pgLook(){
   return `<div class="page"><div class="inner" style="justify-content:flex-start;flex:1;gap:10px">
     <h1 class="title" style="font-size:24px;margin:0">캐릭터 꾸미기</h1>
     <div id="lookStage" style="display:flex;justify-content:center;height:124px">${lookPreview()}</div>
-    <div class="dialogue" style="margin:0">마음에 드는 모습으로 바꿔 보세요 ✨</div>
+    <div class="dialogue" style="margin:0">내 캐릭터의 모습을 골라요.</div>
     <div class="looklabel">머리 모양</div>${lookRow('hair',hair)}
     <div class="looklabel">얼굴</div>${lookRow('face',face)}
     <div class="looklabel">옷</div>${lookRow('outfit',outfit)}
@@ -2607,13 +2610,9 @@ function pgLook(){
 }
 function pgStory(){
   return `<div class="page"><div class="inner">
-    <div class="mhead" style="justify-content:center">2030년, 아픈 지구</div>
+    <div class="mhead" style="justify-content:center">숲에서 첫걸음</div>
     <div class="dialogue"><div class="who">🧚 에코</div>
-      사람들이 나무를 베고 쓰레기를 버렸어요.<br>
-      숲과 바다가 병들었고, 저 같은 <b>정령</b>들도 힘을 잃었어요.
-    </div>
-    <div class="dialogue"><div class="who">🧚 에코</div>
-      <b>${NAME()}</b> 님, 저와 함께 <b>숲</b>부터 되살려 주세요!
+      <b>${NAME()}</b> 님, 숲이 많이 아파요.<br>저와 함께 숲부터 돌봐 주세요.
     </div>
     <div class="card" style="text-align:center">
       <div style="font-size:12px;color:rgba(251,246,234,.65);margin-bottom:6px">나의 번호</div>
@@ -2630,18 +2629,15 @@ function pgPet(){
     <div class="petcard ${S.petKey===p.key?'on':''}" onclick="pickPet('${p.key}')">
       <div class="av">${heroSpritePreview(p)}${petSprite(p,44,0)}</div>
       <div class="nm">${p.name}</div>
-      <div class="ds">${p.desc}</div>
       <div class="tag" style="background:rgba(246,201,79,.2);color:var(--gold)">✨ ${p.skill.name}</div>
       <div class="ds" style="font-size:11.5px;line-height:1.5">${p.skill.plain}</div>
-      <div class="ds" style="font-size:10.5px;opacity:.7">${p.skill.tip}</div>
-      <div class="tag">${p.strongIn.join("·")}에서 힘이 세져요</div>
     </div>`).join('');
   return `<div class="page"><div class="inner">
     <div class="dialogue"><div class="who">🧚 에코</div>
-      같이 갈 친구를 골라 주세요.<br>정령마다 <b>처음부터 쓰는 고유 기술</b>이 달라요!
+      함께 탐험할 정령을 골라요.
     </div>
     <div class="petgrid">${cards}</div>
-    <div class="note">이번에는 <b>숲</b>이라서 땅정령이 조금 더 힘이 세요.<br>다음 지역에서는 다른 정령이 활약해요!</div>
+    <div class="note">정령마다 잘하는 일이 달라요.</div>
     <button class="btn" ${S.petKey?'':'disabled'} onclick="go('guide')">이 정령과 함께하기</button>
   </div></div>`;
 }
@@ -2653,32 +2649,15 @@ function pickPet(k){ S.petKey=k; render(); }
 /* ---------- 조작 안내 ---------- */
 function pgGuide(){
   const p=PETS[S.petKey];
-  const spots=CUR.map.objs.map(o=>{
-    const d={lesson:'이야기 듣고 퀴즈 풀기',battle:'오염 몬스터와 싸우기',gather:'도구로 재료 모으기',
-             craft:'재료로 물건 만들기',shop:'장비·회복약 사기',altar:'제단에서 쉬어 가기'}[o.type]||'';
-    return `<div class="itemrow" style="padding:8px 10px">
-      <div class="ico">${o.icon}</div>
-      <div class="tx"><b>${o.cap}</b><small>${d}</small></div></div>`;
-  }).join('');
   return `<div class="page"><div class="inner">
     <div class="dialogue"><div class="who">🧚 에코</div>
       <b>${p.name}</b>${J(p.name,'이','가')} 함께 가기로 했어요!<br>${CUR.name}${JRO(CUR.name)} 들어가 볼까요?
     </div>
-    <div class="card">
-      <div style="font-family:'Do Hyeon',sans-serif;font-size:15px;color:var(--gold);margin-bottom:8px">이렇게 해요</div>
-      <div style="font-size:14px;line-height:2.1">
-        <b>①</b> 버튼으로 걸어다녀요 <span style="opacity:.6">(◀▶▲▼ · 키보드도 됨)</span><br>
-        <b>②</b> <span style="color:var(--gold)">빛나는 동그라미</span> 안으로 들어가요<br>
-        <b>③</b> 활동을 하면 숲이 깨끗해져요<br>
-        <b>④</b> <b>100%</b>가 되면 제단으로 가요
-      </div>
-    </div>
+    <div class="card">방향 버튼으로 움직여요. 빛나는 곳에 다가가 살펴보세요.</div>
     <div class="card" style="border-color:var(--gold)">
       <div style="font-family:'Do Hyeon',sans-serif;font-size:14px;color:var(--gold);margin-bottom:5px">${p.name}의 고유 기술 · ${p.skill.name}</div>
-      <div style="font-size:13.5px">${p.skill.plain} <span style="opacity:.6">(기력 ${p.skill.sp})</span><br><span style="font-size:12px;opacity:.75">${p.skill.tip}</span></div>
+      <div style="font-size:13.5px">${p.skill.plain} <span style="opacity:.6">(기력 ${p.skill.sp})</span></div>
     </div>
-    <div style="font-family:'Do Hyeon',sans-serif;font-size:14px;color:var(--gold)">숲에 있는 곳들</div>
-    <div class="col">${spots}</div>
     <button class="btn" onclick="enterWorld()">숲으로 출발!</button>
   </div></div>`;
 }
@@ -4758,7 +4737,7 @@ function rPaintHud(){
     const prod=Object.entries(S.produce).filter(([k,v])=>v>0)
       .map(([k,v])=>`<span class="chip">${itemInfo(k).nm} ${v}</span>`).join('');
     const bloom=F.plots.filter(p=>p.seed&&p.stage>=3).length;
-    el.innerHTML=`<span class="chip farm-build">${ECO_BUILD_ID}</span><span class="chip">📅 ${S.day}일째</span><span class="chip" style="${canLeft()?'':'background:rgba(212,64,64,.32)'}">💧 ${canLeft()}/${canCap()}</span>
+    el.innerHTML=`<span class="chip">📅 ${S.day}일째</span><span class="chip" style="${canLeft()?'':'background:rgba(212,64,64,.32)'}">💧 ${canLeft()}/${canCap()}</span>
       <span class="chip">🌰 씨앗 ${seeds}</span>
       <span class="chip">🌸 수확 가능 ${bloom}</span>
       <span class="chip">🐔 우리 ${F.pens.filter(Boolean).length}/${PENS}</span>
@@ -6060,7 +6039,7 @@ function pgCert(){
       <div style="font-size:12px;color:#7a6a4a">제 ${esc(S.code)} 호</div>
       <div class="nm">${NAME()}</div>
       <p>
-        위 사람은 「에코 크로니클」 제${CUR.chapter}장 <b>${CUR.title}</b>에서<br>
+        위 사람은 「환경 원정대」 제${CUR.chapter}장 <b>${CUR.title}</b>에서<br>
         ${CUR.name} 생태계의 구조와 환경 오염 문제를 배우고,<br>
         정화 활동을 성실히 수행하여 ${CUR.name}${J(CUR.name,'을','를')} 완전히 되살렸으므로<br>
         이 수료증을 수여합니다.
@@ -6069,7 +6048,7 @@ function pgCert(){
         정화 달성 ${S.gauge}% · 레벨 Lv.${S.lv} · 퀴즈 ${qCorrect()}/${CUR.quiz.length}문항 정답<br>
         생물 도감 ${S.dex.length}/${CUR.creatures.length}종 등록${S.boxOpen?' · 비밀 상자 해제':''}
       </p>
-      <div class="seal">${ymd}<br><b>정령 에코 · 에코 크로니클 운영진</b> 🌿</div>
+      <div class="seal">${ymd}<br><b>정령 에코 · 환경 원정대</b> 🌿</div>
     </div>
     <div class="row noprint">
       <button class="btn" onclick="window.print()">인쇄 / PDF 저장</button>

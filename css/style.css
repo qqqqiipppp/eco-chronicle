@@ -709,6 +709,8 @@ input.namefield:focus{border-color:var(--gold)}
 .farm-gate-sign{position:absolute;pointer-events:none;padding:4px 9px;border:2px solid #62482c;border-radius:3px;color:#f7eaca;background:#89673e;box-shadow:2px 3px 0 #352c2744;font-size:11px;white-space:nowrap}
 
 .build-label{display:inline-block;margin:8px auto 12px;padding:5px 14px;background:#263e4c;color:#fff4bf;border:1px solid #cbb976;border-radius:20px;font-size:13px;font-weight:700}.farm-build{background:#263e4c!important;color:#fff4bf!important}
+#ecoPresenceDebug{display:none}
+body.admin-active #ecoPresenceDebug{display:block}
 
 .animal-hd,.companion-art{image-rendering:auto!important}.companion-facing{transform-origin:center center}
 

@@ -133,8 +133,7 @@ function pangHTML(){
       <span>⏱ <b id="pgTime">75</b>초</span><span class="hearts" id="pgHearts">❤️❤️❤️</span></div>
     <div class="pangwrap" style="background-image:url('${art}')"><canvas id="pangCanvas" width="${PANG_W}" height="${PANG_H}" aria-label="쓰레기를 줍는 플로킹 필드"></canvas>
       <div class="pang-intro" id="pgIntro"><div class="pang-intro-card"><h2>플로킹을 해보자</h2>
-        <p>길에 버려진 쓰레기를 주워 깨끗하게 만들어 보세요!</p>
-        <p>나무와 바위를 피해 쓰레기 ${PANG_GOAL}개를 모으세요.<br>돌아다니는 방해 NPC와 부딪히면 하트가 줄어요.<br>NPC가 버린 꽁초·컵·과자봉지도 안전하게 주울 수 있어요!</p>
+        <p>목표: 쓰레기 ${PANG_GOAL}개 · 시간: 75초<br>돌아다니는 사람과 부딪히면 하트가 1개 줄어요.</p>
         <button class="btn" type="button" onclick="pangStart()">시작하기</button></div></div>
       <div class="pang-message" id="pgMessage" aria-live="polite"></div></div>
     <div class="pangctrl"><div class="side" aria-label="이동 버튼">
