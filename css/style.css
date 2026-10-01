@@ -9,7 +9,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
 html,body{margin:0;padding:0;height:100%}
 body{
-  height:100%;background:#0f0e13;display:flex;align-items:center;justify-content:center;
+  height:var(--game-viewport-height,100vh);background:#0f0e13;display:flex;align-items:center;justify-content:center;
   font-family:'Gowun Dodum',sans-serif;color:var(--cream);padding:10px;overflow:hidden;
 }
 .device{
@@ -19,7 +19,7 @@ body{
   box-shadow:0 24px 70px rgba(0,0,0,.6), inset 0 0 0 2px rgba(255,255,255,.05);
   display:flex; flex-direction:column; position:relative;
 }
-.screen{flex:1;border-radius:16px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#191521}
+.screen{flex:1;min-height:0;border-radius:16px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#191521}
 
 /* ============ HUD ============ */
 .hud{
@@ -446,14 +446,30 @@ input.namefield:focus{border-color:var(--gold)}
    ========================================================== */
 
 /* ---- 기기 프레임: 태블릿 비율 대응 ---- */
+:root{--game-viewport-height:100vh}
+@supports(height:100dvh){:root{--game-viewport-height:100dvh}}
 .device{
   width:min(98vw,1280px);
   aspect-ratio:auto;
-  height:min(96vh, calc(98vw / 1.33));
-  max-height:96vh;
+  min-height:0;
+  height:min(calc(var(--game-viewport-height) * .96),calc(98vw / 1.33),calc(var(--game-viewport-height) - 20px));
+  max-height:calc(var(--game-viewport-height) - 20px);
 }
 @media (max-aspect-ratio:1/1){
-  .device{height:96vh;width:98vw}
+  .device{height:min(calc(var(--game-viewport-height) * .96),calc(var(--game-viewport-height) - 20px));width:98vw}
+}
+/* Below ~740px, the usual frame + HUD leave less than 640px of visible world.
+   Reserve the HUD's real height in flow; keep the camera and map unscaled. */
+@media (orientation:landscape) and (max-height:740px){
+  .device{padding:8px}
+  #screen[data-scene="world"] #hudHost{order:-1;flex:0 0 auto;position:relative;z-index:30}
+  #screen[data-scene="world"] .hud{position:static;flex-wrap:wrap;gap:5px;padding:0 6px}
+  #screen[data-scene="world"] .hud .pill{padding:2px 6px;gap:4px}
+  #screen[data-scene="world"] .hud .grow{min-width:90px}
+  #screen[data-scene="world"] .hudbtns{gap:4px;flex-shrink:0;flex-wrap:wrap}
+  #screen[data-scene="world"] .hudbtns .eco-online-button{position:static}
+  #screen[data-scene="world"] .hudbtns .iconbtn{min-width:36px;min-height:36px;padding:4px 6px;line-height:20px}
+  #screen[data-scene="world"] #worldRoot{flex:1 1 0;min-height:0}
 }
 
 /* ---- 전투 전 확인 (마주침) ---- */

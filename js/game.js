@@ -2779,6 +2779,8 @@ function paintHud(){
       <button class="iconbtn" onclick="doSave()">저장<span id="saveDot"></span></button>
     </div>
   </div>`;
+  const root=$('worldRoot');
+  if(root){ Wd.vw=root.clientWidth||900; Wd.vh=root.clientHeight||600; }
   void hpPct;
 }
 
@@ -2786,11 +2788,25 @@ function mountWorld(){
   let seed=Array.from(CUR.id).reduce((n,c)=>Math.imul(n,31)+c.charCodeAt(0),4096)>>>0;
   const artRandom=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   const root=$('worldRoot');
+  const fitViewport=()=>{
+    if(!window.CSS || !CSS.supports('height','100dvh')){
+      document.documentElement.style.setProperty('--game-viewport-height',(window.visualViewport?window.visualViewport.height:window.innerHeight)+'px');
+    }
+  };
+  fitViewport();
   Wd.vw=root.clientWidth||900; Wd.vh=root.clientHeight||600;
+  if(window._worldSizeObserver) window._worldSizeObserver.disconnect();
+  if(typeof ResizeObserver==='function'){
+    window._worldSizeObserver=new ResizeObserver(()=>{
+      Wd.vw=root.clientWidth||900; Wd.vh=root.clientHeight||600;
+    });
+    window._worldSizeObserver.observe(root);
+  }
   if(!window._rz){ window._rz=true; window.addEventListener('resize',()=>{
+    fitViewport();
     const r=document.getElementById('worldRoot');
     if(r){ Wd.vw=r.clientWidth||900; Wd.vh=r.clientHeight||600; }
-  }); }
+  }); if(window.visualViewport) window.visualViewport.addEventListener('resize',fitViewport); }
 
   $('dirtLayer').innerHTML=worldPathSVG();
 
