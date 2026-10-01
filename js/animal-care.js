@@ -1,5 +1,7 @@
 /* One shared care room for the four short animal welfare stages. */
 var Care=null;
+// Keep only the previous stage orders in this page session, outside saved game data.
+var CareOrderHistory={};
 var CARE_SECONDS=17;
 var CARE_START_SCORE=35;
 var CARE_PASS_SCORE=65;
@@ -58,8 +60,20 @@ function careStageMarkup(stage){
     '<div class="care-animal"><div class="care-need-bubble" id="careNeed"></div>'+animal+'<div class="care-animal-name">'+stage.name+'</div></div></div>'+
     '<div class="care-place-name">'+stage.place+'</div></div>';
 }
-function careActionsMarkup(stage){
-  return stage.actions.map(function(action){return '<button type="button" class="care-action" data-care-action="'+action[0]+'"><span class="care-action-icon">'+action[1]+'</span><span class="care-action-label">'+action[2]+'</span></button>';}).join('');
+function careShuffle(items,previous){
+  var order=items.slice();
+  for(var i=order.length-1;i>0;i--){
+    var j=Math.floor(Math.random()*(i+1)),item=order[i];order[i]=order[j];order[j]=item;
+  }
+  if(order.length>1&&previous&&order.every(function(item,index){return item===previous[index];})){
+    var first=Math.floor(Math.random()*order.length);
+    var other=(first+1+Math.floor(Math.random()*(order.length-1)))%order.length;
+    var swap=order[first];order[first]=order[other];order[other]=swap;
+  }
+  return order;
+}
+function careActionsMarkup(stage,actions){
+  return (actions||stage.actions).map(function(action){return '<button type="button" class="care-action" data-care-action="'+action[0]+'"><span class="care-action-icon">'+action[1]+'</span><span class="care-action-label">'+action[2]+'</span></button>';}).join('');
 }
 function careUpdateScore(a){
   a.score=Math.max(0,Math.min(100,a.score));
@@ -76,7 +90,7 @@ function careSetFeedback(message,kind){
 function careSetPrompt(a,index){
   if(a.prompt>=0&&!a.answered){a.score-=2;careUpdateScore(a);}
   a.prompt=index;a.answered=false;a.penalized=false;
-  var need=CARE_STAGES[a.stage].needs[index],bubble=$('careNeed');
+  var need=a.needs[index],bubble=$('careNeed');
   if(bubble)bubble.innerHTML='<span>'+need[0]+'</span> '+need[1];
   var controls=$('careControls');
   if(controls)controls.querySelectorAll('.care-action').forEach(function(button){button.disabled=false;button.classList.remove('is-correct','is-wrong');});
@@ -85,8 +99,12 @@ function careSetPrompt(a,index){
 function careSetStage(a,index){
   a.stage=index;a.elapsed=0;a.prompt=-1;a.answered=false;a.penalized=false;a.status='playing';
   var stage=CARE_STAGES[index];
+  var previous=CareOrderHistory[stage.id]||{};
+  a.needs=careShuffle(stage.needs,previous.needs);
+  var actions=stage.id==='crab'?careShuffle(stage.actions,previous.actions):stage.actions;
+  CareOrderHistory[stage.id]={needs:a.needs,actions:actions};
   $('careBody').innerHTML=careStageMarkup(stage);
-  $('careControls').innerHTML=careActionsMarkup(stage);
+  $('careControls').innerHTML=careActionsMarkup(stage,actions);
   $('careStagebar').innerHTML=CARE_STAGES.map(function(item,i){return '<span class="care-stage-dot'+(i===index?' is-current':i<index?' is-done':'')+'">'+(i+1)+' · '+item.name+'</span>';}).join('');
   $('careLesson').hidden=true;
   $('careTimer').textContent=(stage.seconds||CARE_SECONDS)+'초';
@@ -94,7 +112,7 @@ function careSetStage(a,index){
 }
 function careAnswer(a,key,button){
   if(Care!==a||a.status!=='playing'||a.answered)return;
-  var need=CARE_STAGES[a.stage].needs[a.prompt];
+  var need=a.needs[a.prompt];
   if(key===need[2]){
     a.score+=5;a.answered=true;button.classList.add('is-correct');
     $('careControls').querySelectorAll('.care-action').forEach(function(b){b.disabled=true;});
@@ -121,7 +139,7 @@ function careTick(a,t){
   var dt=a.last?Math.max(0,(t-a.last)/1000):0;a.last=t;
   if(a.status==='playing'){
     a.elapsed+=dt;
-    var stage=CARE_STAGES[a.stage],seconds=stage.seconds||CARE_SECONDS,needs=stage.needs;
+    var stage=CARE_STAGES[a.stage],seconds=stage.seconds||CARE_SECONDS,needs=a.needs;
     $('careTimer').textContent=Math.max(0,Math.ceil(seconds-a.elapsed))+'초';
     var prompt=Math.min(needs.length-1,Math.floor(a.elapsed/(seconds/needs.length)));
     while(a.prompt<prompt)careSetPrompt(a,a.prompt+1);
