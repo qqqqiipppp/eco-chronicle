@@ -836,9 +836,10 @@ input.namefield:focus{border-color:#f4d38a;box-shadow:inset 0 2px 6px #051b2444,
 /* Crisp separation without blurring the monster silhouette. */
 .monster-readable{position:relative;overflow:visible;--monster-scale:1.22}
 .monster-readable.monster-mid{--monster-scale:1.48}
+.monster-readable.monster-elite{--monster-scale:1.68}
 .monster-readable.monster-boss{--monster-scale:1.7}
 .monster-scale{transform:scale(var(--monster-scale));transform-origin:center bottom;filter:contrast(1.12) drop-shadow(1px 0 0 #f6e8bd) drop-shadow(-1px 0 0 #f6e8bd) drop-shadow(0 2px 0 #111827) drop-shadow(0 5px 3px #101522aa)}
-@media(max-width:520px){.monster-readable{--monster-scale:1.16}.monster-readable.monster-mid{--monster-scale:1.32}.monster-readable.monster-boss{--monster-scale:1.48}}
+@media(max-width:520px){.monster-readable{--monster-scale:1.16}.monster-readable.monster-mid{--monster-scale:1.32}.monster-readable.monster-elite{--monster-scale:1.5}.monster-readable.monster-boss{--monster-scale:1.48}}
 
 /* Fine facial contours use the 4x source instead of nearest-neighbour dots. */
 .sprite.head,.head-choice,.npclayer.head{image-rendering:auto}
@@ -852,8 +853,9 @@ input.namefield:focus{border-color:#f4d38a;box-shadow:inset 0 2px 6px #051b2444,
 .encounter .monster-readable{margin-inline:auto}
 .encounter:has(.monster-normal){padding-top:32px}
 .encounter:has(.monster-mid){padding-top:68px}
+.encounter:has(.monster-elite){padding-top:86px}
 .encounter:has(.monster-boss){padding-top:98px}
-@media(max-width:520px){.encounter:has(.monster-mid){padding-top:48px}.encounter:has(.monster-boss){padding-top:68px}}
+@media(max-width:520px){.encounter:has(.monster-mid){padding-top:48px}.encounter:has(.monster-elite){padding-top:62px}.encounter:has(.monster-boss){padding-top:68px}}
 
 /* R36: three drawn poses, mostly neutral. Position percentages select whole cells. */
 @keyframes monsterIdle36{
@@ -962,3 +964,20 @@ button.opt{width:100%;text-align:left;font:inherit;font-size:15px;line-height:1.
 @keyframes bossIdle41{0%,100%{transform:scale(1,1)}50%{transform:scale(1.008,1.014)}}
 @keyframes bossAttackPose41{0%{background-position:0 0;transform:rotate(1deg)}15%,75%{background-position:50% 0;transform:rotate(-2deg)}100%{background-position:0 0;transform:rotate(0)}}
 @media(prefers-reduced-motion:reduce){.cinematic-battle .boss-r41{animation:none!important}.cinematic-battle .lungeFoe .boss-r41{background-position:50% 0}.cinematic-battle .hurt2 .boss-r41{background-position:100% 0;transform:none}}
+
+/* Five independent, fixed-canvas tower elite poses; only their cells change. */
+.tower-elite-art{background-repeat:no-repeat;background-size:500% 100%;background-position:0 0;image-rendering:auto;transform-origin:50% 90%}
+.tower-elite-art[data-pose="1"]{background-position:25% 0}
+.tower-elite-art[data-pose="2"]{background-position:50% 0}
+.tower-elite-art[data-pose="3"]{background-position:75% 0}
+.tower-elite-art[data-pose="4"]{background-position:100% 0}
+.cinematic-battle .bactor .tower-elite-art{width:100%!important;height:100%!important;transform:scale(1.15)}
+
+/* Keep the craft station's existing three-frame animation while matching each world. */
+#worldRoot #wart-craft .pxa{image-rendering:auto}
+#worldRoot[data-theme="forest"] #wart-craft .pxa{background-image:url('../assets/images/objects/campfire-forest.png')!important}
+#worldRoot[data-theme="river"] #wart-craft .pxa{background-image:url('../assets/images/objects/campfire-river.png')!important}
+#worldRoot[data-theme="ocean"] #wart-craft .pxa{background-image:url('../assets/images/objects/campfire-ocean.png')!important}
+#worldRoot[data-theme="city"] #wart-craft .pxa{background-image:url('../assets/images/objects/campfire-city.png')!important}
+#worldRoot[data-theme="air"] #wart-craft .pxa{background-image:url('../assets/images/objects/campfire-air.png')!important}
+#worldRoot[data-theme="climate"] #wart-craft .pxa{background-image:url('../assets/images/objects/campfire-climate.png')!important}

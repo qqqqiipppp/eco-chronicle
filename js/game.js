@@ -318,7 +318,7 @@ function activeSkills(){
 
 function monStats(m){
   if(m && m.fixed) return {hp:m.hp, atk:m.atk,
-    dr: m.boss ? MON_DR_BOSS : (m.mid ? MON_DR_MID : MON_DR_BASE)};
+    dr: m.eliteDr??(m.boss ? MON_DR_BOSS : (m.mid ? MON_DR_MID : MON_DR_BASE))};
   var k = S.lv - 1;
   return {
     hp : Math.round(m.hp  * (1 + MON_HP_SCALE  * k)),
@@ -739,11 +739,15 @@ function monKey(i){
 function monsterSVG(i,size,cls){
   if(Shadow.on||Duel.on) return monsterArtBase(i,size,cls);
   const m=(Tw.on&&Tw.mon)||CUR.monsters[i]||{};
-  const rank=m.boss?'boss':m.mid?'mid':'normal';
+  const rank=m.boss?'boss':m.eliteId?'elite':m.mid?'mid':'normal';
   return `<div class="monster-readable monster-${rank}" style="width:${size||64}px;height:${size||64}px"><div class="monster-scale">${monsterArtBase(i,size,cls)}</div></div>`;
 }
 function monsterArtBase(i,size,cls){
   size=size||64;
+  if(Tw.on&&Tw.mon&&Tw.mon.eliteId){
+    const id=Tw.mon.eliteId;
+    return `<div class="tower-elite-art ${cls||''}" data-elite="${id}" data-pose="0" data-poses="idle,attack,special1,special2,hit" style="width:${size}px;height:${size}px;background-image:url('${ECO_TOWER_ELITE_ART[id]}')"></div>`;
+  }
   if(Shadow.on){                            // 나 자신은 흑백으로
     return `<div style="width:${size}px;height:${size}px;display:flex;
       align-items:flex-end;justify-content:center" class="${cls||''}">
@@ -1799,7 +1803,7 @@ function mShadowLose(){
      7층 주기: 전투1 → 달리기 → 전투2 → 전투3 → 도약 → 전투4 → 보스
      쓰러지면 1층부터 다시 — 기록(층·시간)만 남는다
    ========================================================== */
-var Tw={on:false, floor:1, t0:0, mon:null, quizIdx:0, tries:0, best:0};
+var Tw={on:false, floor:1, t0:0, mon:null, quizIdx:0, tries:0, best:0, eliteStage:false, elitePending:false};
 
 function towerPool(){
   const pool=[];
@@ -1855,7 +1859,7 @@ function shuffled(n, seed){
 }
 function towerStart(){
   setTimeout(bgmUpdate,60);
-  InterludeRun=null;Tw.interludePending=null;Tw.floorCleared=false;Tw.quizPassed=false;Tw.on=true; Tw.floor=1; Tw.t0=Date.now(); Tw.tries=0;
+  InterludeRun=null;Tw.interludePending=null;Tw.floorCleared=false;Tw.quizPassed=false;Tw.eliteStage=false;Tw.elitePending=false;Tw.on=true; Tw.floor=1; Tw.t0=Date.now(); Tw.tries=0;
   Tw.deck=shuffled(towerQuiz().length, Date.now());   // 이번 도전에 쓸 문제 순서
   Tw.deckAt=0;
   const st=baseStats();
@@ -1863,16 +1867,26 @@ function towerStart(){
   towerFloor();
 }
 function towerFloor(){
+  Tw.eliteStage=false;Tw.elitePending=false;
   Tw.mon=towerMon(Tw.floor);
   S.modal='towerFloor'; drawModal();
 }
 function towerGo(){
   if(Tw.floorCleared){towerNext();return;}
+  if(Tw.elitePending){towerEliteGo();return;}
   closeModal();stopLoop();
   if(floorKind(Tw.floor)==='mini'){
     if(!Tw.interludePending)Tw.interludePending=makeInterlude((Tw.floor-1)%7===1?0:2);
     S.modal='interlude';drawModal();return;
   }
+  wipeIn(mountBattle);
+}
+function towerEliteGo(){
+  const e=towerEliteForFloor(Tw.floor);
+  if(!Tw.on||!Tw.elitePending||!e)return;
+  Tw.elitePending=false;Tw.eliteStage=true;
+  Tw.mon=towerEliteMonster(e,Tw.mon.themeId);
+  closeBattleDom();B=null;
   wipeIn(mountBattle);
 }
 function towerNext(){
@@ -1882,7 +1896,7 @@ function towerNext(){
   closeBattleDom();B=null;towerFloor();
 }
 function towerRetire(reason){
-  InterludeRun=null;Tw.interludePending=null;Tw.floorCleared=false;
+  InterludeRun=null;Tw.interludePending=null;Tw.floorCleared=false;Tw.eliteStage=false;Tw.elitePending=false;
   const floor=Tw.floor, t=towerTime();
   Tw.on=false;
   setTimeout(bgmUpdate,120);
@@ -1911,16 +1925,18 @@ function showTowerWin(){
   S.hpCur=Math.max(1,B.hp); S.spCur=B.sp;
   autosave();
   host.innerHTML=`<div class="back on"><div class="sheet">
-    <div class="mhead"><span>🗼 ${Tw.floor}층 통과!</span>
+    <div class="mhead"><span>🗼 ${Tw.elitePending?`${Tw.floor}층 상위 중간보스 등장!`:`${Tw.floor}층 통과!`}</span>
       <span style="font-size:12px;color:var(--gold)">⏱ ${fmtTime(towerTime())}</span></div>
     <div class="card" style="font-size:13.5px;line-height:1.9">
       ${m.name}${J(m.name,'을','를')} 이겼어요<br>
       골드 <b>+${m.gold}</b> · 경험치 <b>+${m.exp}</b><br>
       남은 체력 <b>${S.hpCur}</b>
     </div>
+    ${Tw.elitePending?`<div class="dialogue"><div class="who">🧚 에코</div>${towerEliteForFloor(Tw.floor).meet}</div>`:''}
+    ${Tw.eliteStage?`<div class="note">${m.after}</div>`:''}
     ${Tw.floor%7===0?'<div class="note">7층 보스 관문을 넘어 체력을 조금 되찾았어요 💚</div>':''}
     <div class="row">
-      <button class="btn" onclick="towerNext()">${Tw.floor+1}층으로</button>
+      <button class="btn" onclick="${Tw.elitePending?'towerEliteGo()':'towerNext()'}">${Tw.elitePending?'상위 중간보스와 대결':`${Tw.floor+1}층으로`}</button>
       <button class="btn sec" onclick="towerRetire('quit')">여기서 그만두기</button>
     </div>
   </div></div>`;
@@ -3242,7 +3258,9 @@ function initBattle(){
       bless:Math.min(S.defeatStreak,BLESS_MAX)*BLESS_STEP,
       lastTaken:0, log:`오염 지대에 <b>${m.name}</b>${J(m.name,'이','가')} 나타났다!`,
       over:false, win:false, busy:true, drop:null, gaugeGot:0, solace:0,
-      stun:0, bleed:0, bleedLeft:0, bleedUsed:0, usedFree:false };
+      stun:0, bleed:0, bleedLeft:0, bleedUsed:0, usedFree:false,
+      elite:m.eliteId?{weak:0,shield:0,dot:0,trap:0,stunPlayer:0,healUsed:false,carbon:0,
+        glare:0,dim:0,reflection:0,barrier:0}:null };
 }
 
 function mountBattle(){
@@ -3316,6 +3334,17 @@ function paintBattle(){
     let extra='';
     if(B.bless>0) extra+=`<br><span style="color:var(--gold);font-size:12px">🧚 에코의 도움 +${Math.round(B.bless*100)}%</span>`;
     if(B.defDown>0) extra+=`<br><span style="color:var(--danger);font-size:12px">포자 때문에 약해졌어요 (${B.defDown}턴 남음)</span>`;
+    if(B.elite){
+      if(B.elite.weak)extra+=`<br><span style="color:var(--danger);font-size:12px">공격 약화 ${B.elite.weak}턴</span>`;
+      if(B.elite.dot)extra+=`<br><span style="color:var(--danger);font-size:12px">오염 피해 ${B.elite.dot}턴</span>`;
+      if(B.elite.trap)extra+=`<br><span style="color:var(--gold);font-size:12px">덫: 공격 특수기 제한 ${B.elite.trap}턴</span>`;
+      if(B.elite.shield)extra+=`<br><span style="color:var(--gold);font-size:12px">상대 방어 ${B.elite.shield}턴</span>`;
+      if(B.elite.carbon)extra+=`<br><span style="color:var(--danger);font-size:12px">탄소 축적: 공격력 +${B.elite.carbon*8}%</span>`;
+      if(B.elite.glare)extra+=`<br><span style="color:var(--gold);font-size:12px">눈부심: 공격 피해 -15% (${B.elite.glare}턴)</span>`;
+      if(B.elite.dim)extra+=`<br><span style="color:var(--gold);font-size:12px">밤낮 뒤섞기: 턴당 기력 회복 1 (${B.elite.dim}턴)</span>`;
+      if(B.elite.reflection)extra+=`<br><span style="color:var(--gold);font-size:12px">하늘 반사: 30% 확률로 피해 25% 감소 (${B.elite.reflection}턴)</span>`;
+      if(B.elite.barrier)extra+=`<br><span style="color:var(--gold);font-size:12px">투명 장벽: 받는 피해 -20% (${B.elite.barrier}턴)</span>`;
+    }
     lg.innerHTML=B.log+extra;
   }
   const sk=$('bSkills');
@@ -3323,7 +3352,7 @@ function paintBattle(){
     sk.innerHTML=activeSkills().map(s=>{
       const locked=S.lv<s.lv, noSp=B.sp<s.sp;
       const hi=(s.id==='ult'&&petStrong())||s.pet;
-      return `<button class="skl ${hi?'hi':''}" ${locked||noSp||B.busy||B.over?'disabled':''} onclick="bSkill('${s.id}')">
+      return `<button class="skl ${hi?'hi':''}" ${locked||noSp||B.busy||B.over||(B.elite?.trap&&['ult','strike','p_fire','p_water','p_earth'].includes(s.id))?'disabled':''} onclick="bSkill('${s.id}')">
         <b>${locked?'🔒 '+s.name:s.name}</b>
         <small>${locked?`Lv.${s.lv}부터 쓸 수 있어요`:(s.sp?`기력 ${s.sp} · `:'')+s.desc}</small></button>`;
     }).join('');
@@ -3351,6 +3380,11 @@ function bpop(who,txt,cls){
 }
 function banim(who,cls,ms){
   const el=$(who==='me'?'bme':'bfoe'); if(!el) return;
+  if(who==='foe'&&Tw.on&&Tw.mon?.eliteId){
+    const art=el.querySelector('.tower-elite-art');
+    if(cls==='hurt2')towerElitePose(4,ms||380);
+    else if(cls==='lungeFoe'&&['0','4'].includes(art?.dataset.pose))towerElitePose(1,ms||380);
+  }
   el.classList.add(cls);
   setTimeout(()=>el.classList.remove(cls),ms||380);
   if(cls==='hurt2'){ flashArt(who); playSfx(who==='foe'?'hit':'hurt'); }
@@ -3397,9 +3431,69 @@ function btag(txt){
   t.textContent=txt; t.classList.add('on');
   setTimeout(()=>t.classList.remove('on'),1000);
 }
+function towerElitePose(frame,ms){
+  const art=$('bfoeArt')?.querySelector('.tower-elite-art');if(!art)return;
+  const token=(Number(art.dataset.token)||0)+1;
+  art.dataset.token=String(token);art.dataset.pose=String(frame);
+  setTimeout(()=>{if(art.isConnected&&art.dataset.token===String(token))art.dataset.pose='0';},ms||520);
+}
+function towerEliteMove(){
+  if(!B?.elite||!Tw.mon?.eliteId)return 0;
+  if(B.turn%4===2)return 1;
+  if(B.turn%4!==0)return 0;
+  if(Tw.mon.eliteId==='powerstrip'&&(B.elite.healUsed||B.ehp>=B.ehpMax))return 0;
+  if(Tw.mon.eliteId==='carbon'&&B.elite.carbon>=3)return 0;
+  return 2;
+}
+function towerEliteTick(){
+  const e=B?.elite;if(!e)return;
+  for(const key of ['glare','reflection','barrier'])if(e[key])e[key]--;
+  if(e.weak)e.weak--;
+  if(e.shield)e.shield--;
+  if(e.trap)e.trap--;
+  if(e.dot){
+    const d=Math.min(8,Math.max(3,Math.round(B.hpMax*.04)));
+    B.hp=Math.max(1,B.hp-d);e.dot--;
+    bpop('me','-'+d);
+  }
+}
+// Only the new light-pollution effect changes recovery; consume it after a player turn.
+function towerEliteRecoverSp(skipNewDim){
+  const e=B?.elite;
+  const reduced=!skipNewDim&&e?.dim>0;
+  B.sp=Math.min(B.spMax,B.sp+(reduced?Math.max(1,Math.floor(SP_REGEN*.5)):SP_REGEN));
+  if(reduced)e.dim--;
+}
+function towerEliteSelfMove(){
+  const id=Tw.mon.eliteId,e=B.elite;
+  towerElitePose(3,700);btag('✦ '+TOWER_ELITES.find(x=>x.id===id).skills[1]+'!');
+  if(id==='leftovers'){e.shield=2;B.log='🍚 <b>과식 폭주!</b> 잔반통이 2턴 동안 받는 피해를 줄입니다.';}
+  if(id==='disposables'){e.shield=2;B.log='📦 <b>압축 포장!</b> 포대가 2턴 동안 받는 피해를 줄입니다.';}
+  if(id==='algae'){e.dot=2;B.log='💧 <b>산소 고갈!</b> 약한 오염 피해가 2턴 지속됩니다.';}
+  if(id==='powerstrip'){
+    const heal=Math.min(Math.round(B.ehpMax*.08),B.ehpMax-B.ehp);
+    B.ehp+=heal;e.healUsed=true;bpop('foe','+'+heal,'heal');
+    B.log='🔌 <b>대기전력 충전!</b> 체력을 조금 회복했습니다. 이 전투에서는 다시 충전하지 못합니다.';
+  }
+  if(id==='poacher'){e.trap=1;B.log='🪤 <b>덫 설치!</b> 다음 차례에는 공격 특수기만 제한됩니다. 기본 공격·방어·회복은 가능합니다.';}
+  if(id==='carbon'){
+    e.carbon=Math.min(3,e.carbon+1);
+    B.log=`🌫️ <b>탄소 축적!</b> 공격력이 +${e.carbon*8}%가 되었습니다. (최대 +24%)`;
+  }
+  if(id==='nightglare'){
+    if(!e.dim)e.dim=2;
+    B.log='💡 <b>밤낮 뒤섞기!</b> 다음 2턴 동안 기력 회복이 2에서 1로 줄어듭니다. 모든 행동은 계속 가능합니다.';
+  }
+  if(id==='glasswall'){
+    if(!e.barrier)e.barrier=2;
+    B.log='🪟 <b>투명 장벽!</b> 다음 2턴 동안 받는 피해를 20% 줄입니다.';
+  }
+  B.turn++;towerEliteRecoverSp(id==='nightglare');B.busy=false;paintBattle();
+}
 
 function bSkill(id){
   if(!B||B.busy||B.over) return;
+  if(B.elite?.trap&&['ult','strike','p_fire','p_water','p_earth'].includes(id))return;
   const s=activeSkills().find(x=>x.id===id);
   const ls=legendOf('shoes');
   const canFree = ls && ls.eff==='free' && !B.usedFree && s.sp>0;
@@ -3451,6 +3545,12 @@ function bSkill(id){
   if(strong) dmg=Math.round(dmg*AFFINITY);
   const resisted = m.pat==='resist' && B.turn%3===0;
   if(resisted) dmg=Math.round(dmg*.5);
+  if(B.elite?.weak)dmg=Math.round(dmg*.82);
+  if(B.elite?.shield)dmg=Math.round(dmg*.78);
+  if(B.elite?.glare)dmg=Math.round(dmg*.85);
+  if(B.elite?.barrier)dmg=Math.round(dmg*.8);
+  const reflectedSky=B.elite?.reflection>0&&Math.random()<.3;
+  if(reflectedSky)dmg=Math.round(dmg*.75);
   dmg=Math.max(1, Math.round(dmg*(1-(B.edr||0))));   // 몬스터 방어력만큼 피해 감소
   B.ehp-=dmg;
 
@@ -3482,6 +3582,7 @@ function bSkill(id){
     + (strong?` <span style="color:var(--green)">(속성 보너스)</span>`:'')
     + (side?`<span style="color:var(--gold)">${side}</span>`:'')
     + (resisted?` <span style="color:var(--danger)">— ${m.name}${J(m.name,'이','가')} 정화 저항으로 피해를 줄였다!</span>`:'')
+    + (reflectedSky?' <span style="color:var(--gold)">하늘 반사로 피해가 25% 줄었어요.</span>':'')
     + legendNote;
   paintBattle();
 
@@ -3513,6 +3614,7 @@ function bFlee(){
 function enemyTurn(){
   if(!B||B.over) return;
   const m=curMon();
+  if(B.elite)towerEliteTick();
 
   // 출혈은 상대 차례가 오기 전에 먼저 깎는다
   if(B.bleed>0 && (B.bleedLeft||0)>0){
@@ -3530,7 +3632,7 @@ function enemyTurn(){
     B.stun--;
     B.log=`${m.name}${J(m.name,'은','는')} <b>기절</b>해서 움직이지 못했다!`;
     btag('기절!');
-    B.turn++; B.sp=Math.min(B.spMax,B.sp+SP_REGEN);
+    B.turn++; towerEliteRecoverSp();
     B.busy=false; paintBattle(); return;
   }
 
@@ -3538,12 +3640,27 @@ function enemyTurn(){
     B.evade=false;
     B.log=`${m.name}의 공격! 하지만 <b>물의 장막</b>에 막혀 빗나갔다!`;
     banim('foe','lungeFoe'); bpop('me','MISS','miss'); btag('회피 성공!');
-    B.turn++; B.sp=Math.min(B.spMax,B.sp+SP_REGEN);
+    B.turn++; towerEliteRecoverSp();
     B.busy=false; paintBattle(); return;
+  }
+
+  const eliteMove=towerEliteMove();
+  if(eliteMove===2){towerEliteSelfMove();return;}
+  if(eliteMove===1){
+    towerElitePose(2,620);
+    btag('✦ '+TOWER_ELITES.find(x=>x.id===m.eliteId).skills[0]+'!');
   }
 
   let dmg=B.eatk+Math.floor(Math.random()*3)-1;
   let note='';
+  if(B.elite){
+    const id=m.eliteId;
+    if(id==='carbon')dmg=Math.round(dmg*(1+B.elite.carbon*.08));
+    if(eliteMove===1){
+      dmg=Math.round(dmg*({leftovers:.75,disposables:1.08,algae:.7,powerstrip:1,poacher:1.45,carbon:1.08}[id]||1));
+      note=` <b>${TOWER_ELITES.find(x=>x.id===id).skills[0]}!</b>`;
+    }
+  }
   if(m.pat && m.patRate && Math.random()<m.patRate){
     if(m.pat==='sp'){ B.sp=Math.max(0,B.sp-5); note=` <b>${m.patName}!</b> SP -5`; }
     else if(m.pat==='def'){ B.defDown=2; note=` <b>${m.patName}!</b> 방어력 감소`; }
@@ -3559,7 +3676,7 @@ function enemyTurn(){
   if(la && la.eff==='dodge' && Math.random()<la.p){
     B.log=`${m.name}의 공격! 하지만 <b>투명 망토</b>에 스쳐 지나갔다!`;
     banim('foe','lungeFoe'); bpop('me','MISS','miss'); btag('회피!');
-    B.turn++; B.sp=Math.min(B.spMax,B.sp+SP_REGEN);
+    B.turn++; towerEliteRecoverSp();
     B.busy=false; paintBattle(); return;
   }
   let reflect=0;
@@ -3567,12 +3684,21 @@ function enemyTurn(){
     reflect=dmg; note+=` <b style="color:var(--gold)">가시 반사!</b>`;
   }
   B.hp-=dmg; B.lastTaken=dmg;
+  if(B.elite&&eliteMove===1){
+    const e=B.elite,id=m.eliteId;
+    if(id==='leftovers'||id==='algae')e.weak=2;
+    if(id==='disposables')B.sp=Math.max(0,B.sp-3);
+    if(id==='powerstrip')e.stunPlayer=1;
+    if(id==='carbon')e.dot=2;
+    if(id==='nightglare'&&!e.glare)e.glare=2;
+    if(id==='glasswall'&&!e.reflection)e.reflection=2;
+  }
   if(reflect>0){
     B.ehp-=reflect;
     setTimeout(()=>{ if(B&&!B.over) bpop('foe','-'+reflect,'crit'); },260);
   }
   if(B.defDown>0) B.defDown--;
-  B.sp=Math.min(B.spMax,B.sp+SP_REGEN);
+  towerEliteRecoverSp();
 
   strike('foe','fxClaw', ()=>bpop('me','-'+dmg));
   if(B.ehp<=0){
@@ -3592,6 +3718,11 @@ function enemyTurn(){
       addExp(B.solace);
       banim('me','faint',800);
       setTimeout(()=>{ if(B && B.over && !B.win) showLose(); },700);
+    } else if(B.elite?.stunPlayer){
+      B.elite.stunPlayer=0;B.busy=true;
+      B.log='<b>과부하 스파크</b>로 정확히 한 차례 기절했어요!';
+      btag('한 차례 기절');paintBattle();
+      setTimeout(()=>{if(B&&!B.over)enemyTurn();},650);
     } else { B.busy=false; }
     paintBattle();
   },480);
@@ -3621,7 +3752,10 @@ function winBattle(){
     B.hp=S.hpCur;
   }
   B.drop=rollDrop(m);
-  if(Tw.on)Tw.floorCleared=true;
+  if(Tw.on){
+    Tw.elitePending=!Tw.eliteStage&&!!towerEliteForFloor(Tw.floor);
+    Tw.floorCleared=!Tw.elitePending;
+  }
   else if(!Duel.on&&!Shadow.on)S.encounterWon=true;
   autosave();
   banim('foe','faint',800);
