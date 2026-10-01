@@ -735,8 +735,26 @@ body{background:radial-gradient(ellipse at 50% 35%,#254c45,#091b20 75%);font-fam
 #screen[data-scene="title"] .page{background-image:linear-gradient(90deg,#0a211ce8,#15362fd9 50%,#0a211ce8),var(--ui-terrain);background-size:auto,512px 512px;background-position:center;image-rendering:pixelated}
 #screen[data-scene="title"] .inner{isolation:isolate}
 #screen[data-scene="title"] .inner::before{content:"";position:absolute;inset:2% -22px;z-index:-1;pointer-events:none;border:1px solid #bd9e6366;border-radius:4px;background:linear-gradient(180deg,#193b2f55,#122e298c);box-shadow:inset 0 0 0 5px #132e262e}
-.title-emblem{height:56px;display:flex;justify-content:center;align-items:center;flex-shrink:0}
-.title-emblem img{height:56px;width:56px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 2px 3px #0007)}
+.title-emblem{height:72px;display:flex;justify-content:center;align-items:center;flex-shrink:0}
+.title-emblem img{height:72px;width:72px;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 2px 3px #0004)}
+/* Landmark artwork and labels only; world coordinates and interaction zones stay intact. */
+#wobj-npc,#mk-npc,#wobj-farm,#mk-farm,#wobj-bush,#mk-bush{--landmark-w:104px;--landmark-h:104px}
+#wobj-tower,#mk-tower{--landmark-w:104px;--landmark-h:128px}
+#wobj-shop,#mk-shop,#wobj-altar,#mk-altar{--landmark-w:112px;--landmark-h:112px}
+#wobj-mon,#mk-mon{--landmark-w:104px;--landmark-h:96px}
+#objLayer :is(#wobj-npc,#wobj-tower,#wobj-altar,#wobj-farm,#wobj-mon,#wobj-shop,#wobj-bush) .wart{line-height:0}
+#objLayer :is(#wobj-npc,#wobj-tower,#wobj-altar,#wobj-farm,#wobj-shop,#wobj-bush) .pxi{display:block;width:var(--landmark-w)!important;height:var(--landmark-h)!important;object-fit:contain;image-rendering:auto}
+#wart-mon .pxi{display:block;image-rendering:auto}
+#wart-altar .pxa{image-rendering:auto;filter:drop-shadow(0 0 3px #b9eaa666)}
+#objLayer :is(#mk-npc,#mk-tower,#mk-altar,#mk-farm,#mk-mon,#mk-shop,#mk-bush){
+  translate:0 calc(62px - var(--landmark-h));display:flex;align-items:center;gap:5px;
+  padding:3px 7px;border:1px solid #c4b786;border-radius:8px;background:#294c3eea;
+  box-shadow:0 2px 3px #142c2f44;white-space:nowrap
+}
+#objLayer :is(#mk-npc,#mk-tower,#mk-altar,#mk-farm,#mk-mon,#mk-shop,#mk-bush) .bub{width:22px;height:22px;margin:0;border:1px solid #ffefbd;font-size:14px;box-shadow:none;flex-shrink:0}
+#objLayer :is(#mk-npc,#mk-tower,#mk-altar,#mk-farm,#mk-mon,#mk-shop,#mk-bush) .pin{display:none}
+#objLayer :is(#mk-npc,#mk-tower,#mk-altar,#mk-farm,#mk-mon,#mk-shop,#mk-bush) .nm{margin:0;font-size:12px;color:#fff3cf;text-shadow:0 1px 1px #102e28}
+#objLayer :is(#wobj-npc,#wobj-tower,#wobj-altar,#wobj-farm,#wobj-mon,#wobj-shop,#wobj-bush) .tip{bottom:0;margin-bottom:0;transform:translate(-50%,calc(100% + 4px));z-index:1}
 h1.title{color:#f4d99a;text-shadow:0 2px 0 #4a3a23,0 4px 0 #071d18,0 0 24px #d7c07a22;letter-spacing:3px}
 .sub{color:#c1d4be;font-size:13px;line-height:1.5}
 .card{background:linear-gradient(145deg,#2a4e43cc,#163a34e6);border-color:#af9e6755;border-radius:5px;box-shadow:inset 0 0 0 3px #0d292733,0 3px 0 #0a201e55}

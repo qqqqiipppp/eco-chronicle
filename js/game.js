@@ -2507,7 +2507,7 @@ function pgTitle(){
   const warn = Save.ok()? '' :
     `<div class="note" style="color:var(--danger)">이 브라우저에서는 저장할 수 없어요. 선생님께 알려 주세요.</div>`;
   return `<div class="page"><div class="inner" style="justify-content:center;flex:1">
-    <div class="title-emblem" aria-hidden="true"><img src="${SPRITES.obj_altar}" alt=""></div>
+    <div class="title-emblem" aria-hidden="true"><img src="./assets/images/objects/title-nature-emblem.png" alt=""></div>
     <h1 class="title">환경 원정대</h1>
     <div class="sub">6개 지역을 탐험하며 환경 문제를 해결해 보세요.</div>
     <div style="height:6px"></div>
