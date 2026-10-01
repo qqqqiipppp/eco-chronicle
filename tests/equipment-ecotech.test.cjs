@@ -62,7 +62,7 @@ c.S.gear.weapon='L1';c.showWin();assert.ok(nodes.get('bResult').innerHTML.includ
 // All eight add-on quests keep the original NPC data and quest completion untouched.
 const npcBefore=read('js/npc-data.js');
 for(const t of c.ECO_TECH){
-  c.S=c.newState();c.S.code='EC_TEST_ECO';c.S.petKey='earth';c.S.lv=10;c.applyTheme(t.theme);c.S.themeId=t.theme;
+  c.S=c.newState();c.S.code='EC_TEST_ECO';c.S.petKey='earth';c.S.lv=10;c.S.cleared=Array.from(c.THEME_ORDER);c.applyTheme(t.theme);c.S.themeId=t.theme;
   const npc=c.NPC_DATA[t.theme].find(n=>n.id===t.npc);assert.ok(npc);
   c.NQ={n:npc};c.ecoTechOpenQuest(t.id);assert.notEqual(c.S.modal,'ecoQuest','old NPC story must finish first');
   c.S.npcDone=[t.npc];c.ecoTechOpenQuest(t.id);assert.equal(c.S.modal,'ecoQuest');

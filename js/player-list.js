@@ -74,7 +74,7 @@
       var row = document.createElement('tr'), td = document.createElement('td');
       td.colSpan = 5;
       td.className = 'eco-online-empty';
-      td.textContent = online && theme === rosterTheme ? '온라인 정보 없음' : '연결할 수 없습니다';
+      td.textContent = online && theme === rosterTheme ? '이 지역에 접속한 친구가 없어요.' : '온라인 기능을 사용할 수 없어요. 게임은 계속할 수 있어요.';
       row.appendChild(td); body.appendChild(row);
       return;
     }

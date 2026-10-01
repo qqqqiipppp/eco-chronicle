@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="96" viewBox="0 0 128 96" image-rendering="pixelated">
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="64" cy="87" rx="55" ry="6" fill="#28352c" opacity=".25"/>
+    <!-- Open, dark resting bay: the shelter offers visible shade. -->
+    <path d="M21 43L64 17L109 44V79H20Z" fill="#4a4e3e" stroke="#49392f" stroke-width="3"/>
+    <path d="M32 43L65 25L98 45V78H31Z" fill="#34483d"/>
+    <path d="M34 46L64 29L94 46V77H34Z" fill="#244139"/>
+    <path d="M37 68Q63 60 91 68L96 80H32Z" fill="#766748"/>
+    <path d="M39 70l13-5 12 3 12-4 13 5-6 9H45Z" fill="#d0ae71"/>
+    <path d="M44 73l12-5m5 7 16-7m-32 9 11-3m25 1 7-3" stroke="#efcf8d" stroke-width="2"/>
+    <!-- Two stout support posts and a plank threshold touch the ground. -->
+    <path d="M22 41L33 41L34 80L22 81Z" fill="#684b38" stroke="#49392f" stroke-width="3"/>
+    <path d="M25 43h4v34h-4z" fill="#c08b56"/>
+    <path d="M96 42L107 42L108 80L96 80Z" fill="#684b38" stroke="#49392f" stroke-width="3"/>
+    <path d="M99 44h4v33h-4z" fill="#c08b56"/>
+    <path d="M21 78L108 77L111 83L18 85Z" fill="#9c6d46" stroke="#49392f" stroke-width="3"/>
+    <path d="M25 79L104 78L102 80L25 82Z" fill="#d0a372"/>
+    <!-- Thick, sloped roof with layered straw and timber, not a flat icon. -->
+    <path d="M7 45L61 12L68 12L121 46L115 53L64 27L14 53Z" fill="#6e4e38" stroke="#49392f" stroke-width="3"/>
+    <path d="M10 44L63 13L69 14L118 45L112 48L65 22L16 49Z" fill="#c09761"/>
+    <path d="M16 44L63 17L69 18L111 44L100 43L65 24L29 45Z" fill="#e5bf82"/>
+    <path d="M14 52L63 26L114 52" fill="none" stroke="#49392f" stroke-width="4"/>
+    <path d="M26 39l9-5m0 3 8-4m8-7 8-4m18 7 9 5m-2 2 12 7m-65 1 9-4m35-14 8 5" stroke="#9d6e48" stroke-width="3"/>
+    <path d="M21 48l9-5m8-5 8-4m39 3 10 5m8 6 7 4" stroke="#f4d69b" stroke-width="2"/>
+    <path d="M17 85l-5 2m98-4 6 3" stroke="#779062" stroke-width="3"/>
+  </g>
+</svg>

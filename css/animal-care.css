@@ -1,0 +1,231 @@
+/* Animal Care Operation: one shared scene for all four short stages. */
+.care-back{
+  position:absolute;inset:0;z-index:46;display:flex;align-items:center;justify-content:center;
+  padding:12px;background:rgba(7,23,22,.88);color:#f7f0d9;
+}
+.care-sheet{
+  position:relative;width:min(100%,1010px);max-width:1010px;height:100%;max-height:740px;min-height:0;overflow:auto;
+  display:flex;flex-direction:column;gap:9px;padding:14px 18px 16px;
+  border:2px solid #bda674;border-radius:10px;
+  background:linear-gradient(155deg,#2b5045,#173b35 65%,#17322e);
+  box-shadow:inset 0 0 0 3px #112e29,0 18px 56px #041b18bb;
+}
+.care-sheet::-webkit-scrollbar{width:6px}
+.care-sheet::-webkit-scrollbar-thumb{background:#8c9f83;border-radius:6px}
+.care-head{display:flex;align-items:center;gap:12px;min-height:47px}
+.care-head>div:first-child{flex:1;min-width:0}
+.care-head-right{display:flex;align-items:center;gap:7px}
+.care-kicker{display:block;font:11px 'Do Hyeon',sans-serif;letter-spacing:1.3px;color:#b4d2b8}
+.care-title{margin:1px 0 0;font:26px/1.1 'Do Hyeon',sans-serif;color:#f6d997;text-shadow:0 2px 0 #12332d}
+.care-step{
+  flex:0 0 auto;padding:5px 10px;border:1px solid #bba977;border-radius:5px;
+  background:#244e42;color:#f5e7c3;font:14px 'Do Hyeon',sans-serif;white-space:nowrap;
+}
+.care-close{
+  flex:0 0 38px;width:38px;height:38px;border:1px solid #baad84;border-radius:5px;
+  background:linear-gradient(#466a5a,#2e5147);color:#f8e7c2;font:25px/1 'Do Hyeon',sans-serif;
+  box-shadow:0 3px 0 #102e28;cursor:pointer;
+}
+.care-close:active{transform:translateY(2px);box-shadow:0 1px 0 #102e28}
+.care-score{
+  display:flex;align-items:center;gap:12px;padding:8px 12px;
+  border:1px solid #a6a57988;border-radius:6px;background:#11342ecc;
+  font:15px 'Do Hyeon',sans-serif;color:#f2e6c7;
+}
+.care-score-track{
+  flex:1;min-width:60px;height:17px;overflow:hidden;border:1px solid #b8ae78;border-radius:4px;
+  background:linear-gradient(#0b2522,#1c4037);box-shadow:inset 0 2px 4px #041a17;
+}
+.care-score-fill{
+  display:block;height:100%;width:0;
+  background:linear-gradient(180deg,#d9e8a5,#8ec681 53%,#4e8b62);
+  box-shadow:inset 0 2px 0 #f5ffd2aa,0 0 12px #a4df91aa;
+  transition:width .25s ease-out;
+}
+.care-score-num{min-width:44px;text-align:right;color:#ffe5a5;font:20px 'Do Hyeon',sans-serif}
+.care-timer{min-width:58px;text-align:center;color:#f6dcaa;font:17px 'Do Hyeon',sans-serif}
+.care-stagebar{display:flex;align-items:center;gap:7px;min-height:25px}
+.care-stage-dot{
+  flex:1;min-width:0;padding:4px 7px;border:1px solid #8c9c7b;border-radius:5px;
+  background:#24463e;color:#c6d7be;text-align:center;white-space:nowrap;
+  font:12px/1.2 'Do Hyeon',sans-serif;
+}
+.care-stage-dot.active,.care-stage-dot.current,.care-stage-dot.is-current,
+.care-stage-dot[aria-current="step"]{
+  border-color:#f0d494;background:linear-gradient(#b38749,#775735);color:#fff5d6;
+  box-shadow:inset 0 1px 0 #ffe5a899,0 2px 0 #203a32;
+}
+.care-stage-dot.done,.care-stage-dot.is-done{background:#457654;color:#f1ffe2;border-color:#9ac385}
+.care-stage-body{display:flex;flex:1;min-height:0}
+.care-scene{
+  --care-sky-tint:rgba(231,227,169,.16);
+  --care-earth-top:#79945a;--care-earth-mid:#536f42;--care-earth-low:#304f3d;
+  position:relative;isolation:isolate;flex:1;min-height:250px;overflow:hidden;
+  border:3px solid #b5a879;border-radius:7px;
+  background-image:linear-gradient(180deg,#e7da9a05,#123c3240),var(--care-bg,linear-gradient(#789c87,#375e4c));
+  background-position:center;background-size:cover;
+  box-shadow:inset 0 0 0 3px #183b34,0 5px 0 #0e2925;
+}
+.care-scene::after{
+  content:"";position:absolute;inset:0;z-index:8;pointer-events:none;
+  box-shadow:inset 0 0 42px 9px #132f2b8c;
+}
+.care-sky{
+  position:absolute;inset:0 0 26%;z-index:0;pointer-events:none;
+  background:linear-gradient(180deg,var(--care-sky-tint),transparent 82%);
+}
+.care-sky::before{
+  content:"";position:absolute;left:8%;top:8%;width:26%;height:23%;opacity:.35;
+  background:radial-gradient(ellipse at 45% 60%,#fff9d7 0 28%,transparent 29%),
+    radial-gradient(ellipse at 62% 53%,#fff9d7 0 24%,transparent 25%),
+    radial-gradient(ellipse at 28% 58%,#fff9d7 0 19%,transparent 20%);
+  filter:blur(2px);
+}
+.care-land{
+  position:absolute;left:0;right:0;bottom:0;height:35%;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,var(--care-earth-top) 0 12%,var(--care-earth-mid) 13% 54%,var(--care-earth-low));
+  box-shadow:0 -4px 16px #172f27aa;
+}
+.care-land::before{
+  content:"";position:absolute;inset:10% 0 0;opacity:.24;
+  background:repeating-linear-gradient(110deg,transparent 0 22px,#c8d98a 23px 25px,transparent 26px 49px),
+    radial-gradient(circle at 14% 47%,#ead8a0 0 3px,transparent 4px),
+    radial-gradient(circle at 72% 66%,#ead8a0 0 2px,transparent 3px);
+}
+.care-place{
+  position:absolute;inset:0;z-index:2;pointer-events:none;
+}
+.care-place::before{
+  content:"";position:absolute;left:25%;right:25%;bottom:7%;height:35%;border-radius:50%;
+  background:radial-gradient(ellipse,#d5bf8399 0,#b9996888 50%,transparent 72%);
+}
+.care-prop{
+  position:absolute;bottom:12%;left:20%;width:74px;height:74px;z-index:3;
+  display:flex;align-items:flex-end;justify-content:center;
+  transform:translateX(-50%);font-size:37px;line-height:1;
+  filter:drop-shadow(0 5px 2px #0d261f99);
+}
+.care-prop-care_fence{width:102px;height:77px}
+.care-prop-care_shelter{width:128px;height:96px}
+.care-prop img{display:block;width:auto;max-width:100%;max-height:100%;object-fit:contain;image-rendering:pixelated}
+.care-prop::after{
+  content:"";position:absolute;z-index:-1;bottom:0;left:16%;right:16%;height:9px;
+  border-radius:50%;background:#18362b77;filter:blur(3px);
+}
+.care-animal{
+  position:absolute;left:50%;bottom:10%;z-index:5;width:190px;height:150px;
+  display:flex;align-items:center;justify-content:center;transform:translateX(-50%);
+  pointer-events:none;
+}
+.care-animal::before{
+  content:"";position:absolute;left:17%;right:17%;bottom:3px;height:17px;
+  border-radius:50%;background:#142f2977;filter:blur(4px);
+}
+.care-sprite{
+  position:relative;z-index:1;display:block;width:144px;height:144px;
+  object-fit:contain;object-position:center bottom;
+  background-repeat:no-repeat;background-position:center bottom;
+  background-size:var(--care-sprite-bg-size,contain);
+  image-rendering:pixelated;
+  filter:drop-shadow(0 5px 2px #10291d88);
+}
+.care-pixel{background-size:288px 144px;background-position:left bottom}
+.care-chick .care-pixel{background-size:576px 144px}
+.care-place-name{
+  position:absolute;top:12px;left:14px;z-index:6;padding:5px 9px;
+  border:1px solid #e5d29c;border-radius:5px;background:#234c40df;
+  color:#fff0c9;font:14px 'Do Hyeon',sans-serif;box-shadow:0 2px 0 #17352f;
+}
+.care-animal-name{
+  position:absolute;left:50%;bottom:-20px;z-index:3;transform:translateX(-50%);
+  min-width:84px;padding:3px 10px;border:1px solid #decc97;border-radius:5px;
+  background:#214b3ee8;color:#fff0c9;text-align:center;white-space:nowrap;
+  font:15px 'Do Hyeon',sans-serif;box-shadow:0 3px 0 #102b26;
+}
+.care-need-bubble{
+  position:absolute;top:10px;left:50%;z-index:7;transform:translateX(-50%);
+  max-width:min(80%,430px);padding:9px 15px;border:2px solid #d8be7c;border-radius:11px;
+  background:#f7efd5;color:#2b473a;text-align:center;white-space:normal;
+  font:17px/1.35 'Do Hyeon',sans-serif;box-shadow:0 4px 0 #6b6746,0 7px 18px #08251c77;
+}
+.care-need-bubble::after{
+  content:"";position:absolute;left:50%;bottom:-10px;width:14px;height:14px;
+  background:#f7efd5;border-right:2px solid #d8be7c;border-bottom:2px solid #d8be7c;
+  transform:translateX(-50%) rotate(45deg);
+}
+.care-animal .care-need-bubble{
+  top:-35px;width:max-content;max-width:340px;min-width:170px;font-size:16px;
+}
+.care-controls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+.care-action{
+  min-width:0;min-height:78px;padding:8px 6px;border:1px solid #b8a877;border-bottom:4px solid #0e2d27;
+  border-radius:7px;background:linear-gradient(180deg,#486e56,#2e5749);
+  color:#f9f0d5;cursor:pointer;touch-action:manipulation;
+  box-shadow:inset 0 1px 0 #cfdfb588,0 3px 7px #08251d77;
+  font-family:'Do Hyeon',sans-serif;
+}
+.care-action:hover{filter:brightness(1.12)}
+.care-action:active{transform:translateY(2px);border-bottom-width:2px}
+.care-action:disabled{opacity:.45;filter:grayscale(.5);cursor:default}
+.care-action.is-correct{opacity:1;filter:none;background:linear-gradient(#8bbf75,#547f57);border-color:#e4e9aa}
+.care-action.is-wrong{background:linear-gradient(#895349,#66453f)}
+.care-action-icon{display:block;margin-bottom:2px;font-size:27px;line-height:1.1}
+.care-action-label{display:block;font-size:14px;line-height:1.25;word-break:keep-all}
+.care-feedback{min-height:22px;text-align:center;color:#f3e0aa;font:14px/1.35 'Do Hyeon',sans-serif}
+.care-feedback.is-good{color:#c8efa8}
+.care-feedback.is-bad{color:#ffb6a2}
+.care-intro,.care-lesson{
+  position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;padding:25px;
+  background:#102b2bc9;color:#fff0d0;text-align:center;backdrop-filter:blur(2px);
+}
+.care-intro[hidden],.care-lesson[hidden]{display:none}
+.care-intro::before,.care-lesson::before{
+  content:"";position:absolute;left:50%;top:50%;width:min(88%,470px);height:min(76%,245px);
+  transform:translate(-50%,-50%);border:2px solid #dac58c;border-radius:8px;
+  background:linear-gradient(160deg,#315b4d,#1b4037);box-shadow:0 9px 32px #041c17cc;
+}
+.care-intro>*,.care-lesson>*{position:relative;z-index:1;max-width:440px;margin:0}
+.care-intro h2,.care-intro h3,.care-lesson h2,.care-lesson h3{
+  color:#ffe2a2;font:26px/1.2 'Do Hyeon',sans-serif;text-shadow:0 2px 0 #142e27;
+}
+.care-intro p,.care-lesson p{font-size:15px;line-height:1.55}
+.care-intro button,.care-lesson button{min-width:170px;min-height:43px;margin-top:4px}
+.care-chick{--care-sky-tint:#ffdfa335;--care-earth-top:#9bab68;--care-earth-mid:#688353;--care-earth-low:#3e6049}
+.care-calf{--care-sky-tint:#d5eab632;--care-earth-top:#83a36d;--care-earth-mid:#587d52;--care-earth-low:#315847}
+.care-mouse{--care-sky-tint:#d3c8c43b;--care-earth-top:#b7a384;--care-earth-mid:#887560;--care-earth-low:#554c4a}
+.care-mouse .care-land::before{opacity:.14;background:repeating-linear-gradient(90deg,#ead9b45c 0 2px,transparent 2px 38px)}
+.care-crab{--care-sky-tint:#a7e3df55;--care-earth-top:#b9bc90;--care-earth-mid:#a19e73;--care-earth-low:#5c7d72}
+.care-crab .care-land{background:linear-gradient(180deg,#acd9cd 0 16%,#c8c79b 17% 58%,#798d77)}
+.care-crab .care-land::before{opacity:.42;background:repeating-radial-gradient(ellipse at 25% -15%,transparent 0 25px,#e5f9dc 26px 29px,transparent 30px 56px)}
+.care-sheet button:focus-visible{outline:3px solid #ffe49e;outline-offset:3px}
+@media(max-width:680px){
+  .care-back{padding:4px}
+  .care-sheet{padding:9px;gap:6px;border-width:1px}
+  .care-title{font-size:20px}.care-kicker{font-size:9px}.care-step{font-size:11px}
+  .care-score{padding:5px 7px;font-size:12px;gap:6px}.care-score-num{font-size:16px}
+  .care-stage-dot{font-size:10px;padding:3px 2px}
+  .care-scene{min-height:220px}.care-animal{width:155px;height:155px}
+  .care-sprite{width:128px;height:128px}
+  .care-pixel{background-size:256px 128px}
+  .care-chick .care-pixel{background-size:512px 128px}
+  .care-need-bubble{font-size:13px;padding:6px 9px}
+  .care-animal .care-need-bubble{font-size:13px;min-width:145px;max-width:240px;top:-40px}
+  .care-prop-care_fence{width:78px;height:60px}.care-prop-care_shelter{width:94px;height:72px}
+  .care-controls{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .care-action{min-height:58px;padding:5px 2px}.care-action-icon{font-size:20px}
+  .care-action-label{font-size:11px}.care-feedback{font-size:12px}
+  .care-intro p,.care-lesson p{font-size:12px}
+  .care-intro h2,.care-intro h3,.care-lesson h2,.care-lesson h3{font-size:20px}
+}
+@media(max-height:570px) and (min-width:681px){
+  .care-sheet{padding:8px 12px;gap:5px}.care-head{min-height:33px}
+  .care-title{font-size:20px}.care-score{padding:4px 10px}.care-stage-dot{padding:2px 6px}
+  .care-scene{min-height:170px}.care-animal{height:130px;width:150px}
+  .care-sprite{width:112px;height:112px}.care-action{min-height:52px;padding:3px}
+  .care-pixel{background-size:224px 112px}
+  .care-chick .care-pixel{background-size:448px 112px}
+  .care-action-icon{font-size:20px}.care-action-label{font-size:11px}
+  .care-feedback{min-height:18px;font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){.care-score-fill{transition:none}}

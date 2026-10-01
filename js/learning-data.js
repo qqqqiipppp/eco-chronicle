@@ -2540,5 +2540,4 @@ Object.keys(LEARNING).forEach(function(id){
   THEMES[id].quiz=basic.concat(transfer);
   THEMES[id].quizAdv=[pages[1],pages[3],pages[4]].map(p=>p.extensionQuiz);
   THEMES[id].monsters.forEach((m,i)=>{const p=pages[Math.min(i,pages.length-1)];m.after=m.storyAfter||(p.cases[1].chain.join(' → ')+'. '+p.cases[1].result);});
-  if(typeof NPC_DATA!=='undefined'&&NPC_DATA[id])NPC_DATA[id].forEach((n,i)=>{const p=pages[i%pages.length];n.talk=(i<pages.length?p.hook:p.misconception)+'<br>'+p.body[0];});
 });

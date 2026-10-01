@@ -31,15 +31,15 @@ var SOLID_ARTS = {"rock": {"r": 22, "dy": 12}, "stump": {"r": 17, "dy": 6}, "log
    ========================================================== */
 var LEVELS = [
   {lv:1, need:0,   hp:60,  atk:13, def:7,  sp:25},
-  {lv:2, need:40,  hp:70,  atk:16, def:9,  sp:30},
-  {lv:3, need:100, hp:80,  atk:19, def:11, sp:35},
-  {lv:4, need:180, hp:90,  atk:22, def:13, sp:40},
-  {lv:5, need:280, hp:100, atk:25, def:15, sp:45},
-  {lv:6, need:400, hp:110, atk:28, def:17, sp:50},
-  {lv:7, need:560, hp:124, atk:31, def:19, sp:56},
-  {lv:8, need:760, hp:138, atk:34, def:21, sp:62},
-  {lv:9, need:1000,hp:152, atk:37, def:23, sp:68},
-  {lv:10,need:1300,hp:168, atk:41, def:26, sp:76}
+  {lv:2, need:48,  hp:70,  atk:16, def:9,  sp:30},
+  {lv:3, need:120, hp:80,  atk:19, def:11, sp:35},
+  {lv:4, need:216, hp:90,  atk:22, def:13, sp:40},
+  {lv:5, need:336, hp:100, atk:25, def:15, sp:45},
+  {lv:6, need:480, hp:110, atk:28, def:17, sp:50},
+  {lv:7, need:672, hp:124, atk:31, def:19, sp:56},
+  {lv:8, need:912, hp:138, atk:34, def:21, sp:62},
+  {lv:9, need:1200,hp:152, atk:37, def:23, sp:68},
+  {lv:10,need:1560,hp:168, atk:41, def:26, sp:76}
 ];
 var MAX_LV = LEVELS.length;
 
@@ -472,8 +472,8 @@ function autosave(){
 }
 function doSave(){
   const mode=Save.save();
-  if(mode==='disk')      toast(`저장 완료! 내 번호 <b>${S.code}</b><br><span style="font-size:11px">다음 시간에 이 번호로 이어서 해요</span>`);
-  else if(mode==='mem')  toast(`저장했어요 (이 브라우저는 저장 공간이 막혀 있어요)<br>번호 <b>${S.code}</b>`);
+  if(mode==='disk')      toast(`저장했어요! 내 번호: <b>${S.code}</b><br><span style="font-size:11px">다음에도 같은 태블릿에서 이어할 수 있어요.</span>`);
+  else if(mode==='mem')  toast('이 브라우저에서는 저장할 수 없어요. 선생님께 알려 주세요.');
   else                   toast("아직 저장할 것이 없어요");
 }
 
@@ -944,8 +944,16 @@ function npcStepAll(dt){
 
 /* 사람 NPC는 주인공 레이어를 조합해 만든다 (그림을 따로 굽지 않는다) */
 function npcArt(n){
-  if(typeof ECO_HUMAN!=='undefined' && ECO_HUMAN[n.id]) return `<div class="eco-npc-visual"><div class="eco-npc-art" style="background-image:url('${ECO_HUMAN[n.id]}')"></div></div>`;
-  if(typeof ECO_NPC!=='undefined' && ECO_NPC[n.sp]) return `<div class="eco-npc-visual"><div class="eco-npc-art" style="background-image:url('${ECO_NPC[n.sp]}')"></div>${typeof ECO_WALK!=='undefined'&&ECO_WALK[n.sp]?`<div class="eco-npc-walk" style="background-image:url('${ECO_WALK[n.sp]}')"></div>`:''}</div>`;
+  const wrap={forest_s2:'dryad',forest_s3:'deerkin',forest_s4:'shroomfae',forest_h7:'sapling',forest_h8:'birdwatcher',forest_h9:'hiker'}[n.id];
+  if(typeof ECO_HUMAN!=='undefined' && ECO_HUMAN[n.id]){
+    if(wrap) return `<div class="eco-npc-visual forest-npc-wrap forest-npc-${wrap}"><div class="eco-npc-art" style="--forest-sprite:url('${new URL(ECO_HUMAN[n.id],document.baseURI).href}')"></div></div>`;
+    return `<div class="eco-npc-visual"><div class="eco-npc-art" style="background-image:url('${ECO_HUMAN[n.id]}')"></div></div>`;
+  }
+  if(typeof ECO_NPC!=='undefined' && ECO_NPC[n.sp]){
+    const artStyle=wrap?'--forest-sprite':'background-image';
+    const artUrl=src=>wrap?new URL(src,document.baseURI).href:src;
+    return `<div class="eco-npc-visual${wrap?` forest-npc-wrap forest-npc-${wrap}`:''}"><div class="eco-npc-art" style="${artStyle}:url('${artUrl(ECO_NPC[n.sp])}')"></div>${typeof ECO_WALK!=='undefined'&&ECO_WALK[n.sp]?`<div class="eco-npc-walk" style="${artStyle}:url('${artUrl(ECO_WALK[n.sp])}')"></div>`:''}</div>`;
+  }
   if(n.sp){
     const wk=n.walk && SPRITES[n.sp+'_w'];
     return `<div class="npcsp anim2 idle" style="background-image:url('${SPRITES[n.sp]}')"></div>`
@@ -1162,7 +1170,8 @@ function mNpc(){
       <span style="font-size:12px;color:rgba(251,246,234,.6)">${n.role}</span></div>`;
   if(done&&!NQ.practice){
     return head+`<div class="encounter">${npcArt(n)}</div>
-      <div class="dialogue">고마워요! 배운 내용을 다시 연습해 볼까요?</div>
+      <div class="dialogue">${n.talk}</div>
+      <div class="note">문제를 다시 풀어 볼까요?</div>
       <button class="btn" onclick="npcPractice()">퀴즈 다시 연습하기</button>
       ${ecoTechNPCButton(n)}
       <button class="btn" onclick="closeModal()">돌아가기</button>`;
@@ -1170,13 +1179,10 @@ function mNpc(){
   // 겨루기를 청하는 NPC — 이기기 전에는 퀴즈로 넘어가지 않는다
   if(n.duel && !duelWon(n.id)){
     return head+`<div class="encounter">${npcArt(n)}</div>
-      <div class="dialogue"><div class="who">⚔️ ${n.nm}</div>
-        말로만 지키겠다는 사람은 많았지.<br>
-        <b>네게 정말 지킬 힘이 있는지</b> 내가 보아야겠다.<br>
-        <span style="opacity:.75">한 판 겨루자. 다치지 않게 봐줄 테니 걱정 말고.</span></div>
+      <div class="dialogue"><div class="who">⚔️ ${n.nm}</div>${n.talk}</div>
+      <div class="note">먼저 나와 겨뤄 볼래요? 져도 다시 도전할 수 있어요.</div>
       <div class="card" style="font-size:12.5px;line-height:1.8">
-        내 체력 <b>${S.hpCur} / ${baseStats().hpMax}</b> · 기력 <b>${S.spCur}</b><br>
-        <span style="opacity:.7">져도 잃는 것은 없어요. 다시 도전할 수 있어요.</span>
+        내 체력 <b>${S.hpCur} / ${baseStats().hpMax}</b> · 기력 <b>${S.spCur}</b>
       </div>
       <button class="btn" onclick="startDuel()">겨뤄 보기</button>
       <button class="btn sec" onclick="closeModal()">다음에요</button>`;
@@ -1203,6 +1209,7 @@ function mNpc(){
       onclick="npcAnswer(${i})" ${picked!=null?'disabled':''}>${i+1}. ${t}</button>`;
   }).join('');
   return head+`<div class="encounter" style="padding-bottom:2px">${npcArt(n)}</div>
+    ${NQ.idx===0&&!NQ.practice&&picked==null?`<div class="dialogue">${n.talk}</div>`:''}
     <div class="card" style="font-size:14.5px;line-height:1.7">${q.q}</div>
     <div style="font-size:11.5px;opacity:.6;text-align:right">문제 ${NQ.idx+1} / ${n.q.length}</div>
     ${opts}
@@ -1555,6 +1562,7 @@ function mAdmin(){
 /* 켜면 게임 전체를 열어 둔다 */
 function admApply(){
   Adm.on = true;
+  document.body.classList.add('admin-active');
   if(!S || !S.code){                       // 제목 화면에서 켰다면 판을 새로 만든다
     S = newState();
     S.name = '관리자'; S.grade = 5; S.code = makeCode();
@@ -1633,9 +1641,13 @@ function admBadge(){
 /* 검사할 때 쓰는 도구 상자 */
 function admPanel(){ S.modal='adminPanel'; drawModal(); }
 function mAdminPanel(){
+  const net=window.ecoMultiplayer && window.ecoMultiplayer.getStats();
+  const sup=window.ecoSupabase;
   return `<div class="mhead"><span>🔧 관리자 도구</span>
       <span style="font-size:12px;color:rgba(251,246,234,.6)">Lv${S.lv} · 🪙${S.gold}</span></div>
-    <div class="note">버그를 찾기 위한 화면이에요. 아이들에게는 보이지 않습니다.</div>
+    <div class="note">빌드 ${ECO_BUILD_ID} · 지역 ${esc(S.themeId)} · 저장 ${esc(S.code||'-')}<br>
+      Supabase ${esc(sup&&sup.status||'대기')} · 채널 ${esc(net&&net.theme?'eco-'+net.theme:'없음')} · 연결 ${esc(net&&net.status||'대기')}<br>
+      접속 ${net&&net.onlinePlayers||0}명 · 원격 ${net&&net.remotePlayers||0}명 · 재연결 ${net&&net.reconnectCount||0}회</div>
     <div class="row"><button class="btn sec" onclick="admGo('forest')">숲</button>
       <button class="btn sec" onclick="admGo('river')">강</button>
       <button class="btn sec" onclick="admGo('ocean')">바다</button></div>
@@ -1655,7 +1667,7 @@ function mAdminPanel(){
       <button class="btn sec" onclick="admMini('spheres')">🔵 칸 채우기</button>
       <button class="btn sec" onclick="admMini('timing')">✦ 정령 바운스</button></div>
     <div class="row"><button class="btn sec" onclick="admMini('match')">🧩 정화 퍼즐</button>
-      <button class="btn sec" onclick="admMini('runner')">➜ 정화 질주</button>
+      <button class="btn sec" onclick="admMini('runner')">🐾 동물 돌봄 대작전</button>
       <button class="btn sec" onclick="admMini('math')">➗ 수학</button></div>
     <div class="row"><button class="btn sec" onclick="admReset()">퀘스트 되돌리기</button>
       <button class="btn sec" onclick="admOff()">관리자 끄기</button></div>
@@ -1691,6 +1703,7 @@ function admReset(){
 }
 function admOff(){
   Adm.on=false;
+  document.body.classList.remove('admin-active');
   const b=$('admBadge'); if(b) b.remove();
   closeModal();
   toast('관리자 모드를 껐어요');
@@ -1800,7 +1813,7 @@ function mShadowLose(){
 
 /* ==========================================================
    몬스터의 탑 — 한 층씩 올라가며 겨루는 도전 모드
-     7층 주기: 전투1 → 달리기 → 전투2 → 전투3 → 도약 → 전투4 → 보스
+     7층 주기: 전투1 → 미니게임 → 전투2 → 전투3 → 미니게임 → 전투4 → 보스
      쓰러지면 1층부터 다시 — 기록(층·시간)만 남는다
    ========================================================== */
 var Tw={on:false, floor:1, t0:0, mon:null, quizIdx:0, tries:0, best:0, eliteStage:false, elitePending:false};
@@ -2089,7 +2102,7 @@ function statBar(now, max, col){
 function mStatus(){
   const st=baseStats(), L=lvInfo(S.lv);
   const need=nextNeed();
-  const prev=(S.lv>1)?LEVELS[S.lv-2].need:0;
+  const prev=LEVELS[S.lv-1].need;
   const expNow=Math.max(0,S.exp-prev), expNeed=need?need-prev:1;
   const bare={hpMax:L.hp, atk:L.atk, def:L.def, spMax:L.sp};
   const slots=['weapon','armor','helm','shoes'].map(sl=>{
@@ -2137,7 +2150,7 @@ function mStatus(){
       <div style="font-size:11.5px;opacity:.75">경험치</div>
       ${statBar(expNow, expNeed, 'var(--gold)')}
       <div style="font-size:12px;margin-top:3px">
-        ${need ? `${expNow} / ${expNeed} · 다음 레벨까지 ${expNeed-expNow}` : '최고 레벨에 닿았어요'}</div></div>
+        ${need ? `${expNow} / ${expNeed} · 다음 레벨까지 ${Math.max(0,need-S.exp)}` : '최고 레벨에 닿았어요'}</div></div>
     <div class="card" style="padding:10px 12px">
       ${row('공격', st.atk, bare.atk, '⚔️')}
       ${row('방어', st.def, bare.def, '🛡️')}
@@ -2389,13 +2402,23 @@ function stashTheme(){
   THEME_FIELDS.forEach(k=>{ o[k]=S[k]; });
   S.progress[S.themeId]=o;
 }
-function themeOpen(t){ return !!(t && t.ready && S.lv>=t.levelGate); }
+function themeOpen(t){
+  if(!t || !t.ready)return false;
+  if(Adm.on)return true;
+  const index=THEME_ORDER.indexOf(t.id);
+  return index>=0 && THEME_ORDER.slice(0,index).every(id=>(S.cleared||[]).includes(id));
+}
+function themeLockMessage(t){
+  const index=THEME_ORDER.indexOf(t.id);
+  const missing=THEME_ORDER.slice(0,index).find(id=>!(S.cleared||[]).includes(id));
+  return missing ? `먼저 ${THEMES[missing].name} 지역을 정화해야 해요.` : '아직 준비 중인 지역이에요.';
+}
 
 function enterTheme(id){
   const t=THEMES[id];
   if(!t){ return; }
   if(!t.ready){ toast("아직 준비 중인 지역이에요"); return; }
-  if(S.lv<t.levelGate){ toast(`${t.icon} ${t.name}${JRO(t.name)} 가려면 <b>Lv.${t.levelGate}</b>가 필요해요`); return; }
+  if(!themeOpen(t)){ toast(themeLockMessage(t)); return; }
   if(id===S.themeId){ S.scene='world'; Wd.ready=false; render(); return; }
 
   stashTheme();
@@ -2498,26 +2521,25 @@ function render(){
 function pgTitle(){
   const last=Save.last();
   const warn = Save.ok()? '' :
-    `<div class="note" style="color:var(--danger)">이 브라우저는 저장 공간이 막혀 있어요.<br>시크릿 모드를 끄면 이어하기가 됩니다.</div>`;
+    `<div class="note" style="color:var(--danger)">이 브라우저에서는 저장할 수 없어요. 선생님께 알려 주세요.</div>`;
   return `<div class="page"><div class="inner" style="justify-content:center;flex:1">
-    <div class="title-emblem" aria-hidden="true"><img src="${SPRITES.obj_altar}" alt=""></div>
-    <h1 class="title">에코 크로니클</h1>
-    <div class="sub">Echo Chronicle · 6개 지역을 되살리는 환경 정화 모험</div>
-    <div class="build-label">${ECO_BUILD_ID} · 전투와 미니게임 모험</div>
+    <div class="title-emblem" aria-hidden="true"><img src="./assets/images/objects/title-nature-emblem.png" alt=""></div>
+    <h1 class="title">환경 원정대</h1>
+    <div class="sub">6개 지역을 탐험하며 환경 문제를 해결해 보세요.</div>
     <div style="height:6px"></div>
     <div class="col">
       <button class="btn" onclick="startNew()">새로 시작하기</button>
       ${last?`<button class="btn sec" onclick="quickLoad('${esc(last)}')">이어하기 (${esc(last)})</button>`:''}
     </div>
     <div class="card" style="margin-top:4px">
-      <div style="font-size:12.5px;color:rgba(251,246,234,.7);margin-bottom:6px;text-align:center">다른 번호로 이어하기</div>
+      <div style="font-size:12.5px;color:rgba(251,246,234,.7);margin-bottom:6px;text-align:center">다른 저장 불러오기</div>
       <div class="row">
         <input class="namefield" id="codeInput" maxlength="6" placeholder="EC0000" style="flex:1;text-align:center;letter-spacing:3px">
         <button class="btn sec" style="flex:0 0 auto;padding:12px 18px" onclick="openLoad()">불러오기</button>
       </div>
     </div>
     ${warn}
-    <div class="note" style="margin-top:4px">태블릿은 가로로 놓고 해요 📱</div>
+    <div class="note" style="margin-top:4px">태블릿을 가로로 놓아 주세요.</div>
     <div style="text-align:center;margin-top:2px">
       <button class="tinybtn" onclick="admOpen()" style="opacity:.55">🔧 관리자 모드</button>
     </div>
@@ -2528,6 +2550,15 @@ function quickLoad(code){
   const raw=Save.load(code);
   if(!raw){ toast("그 번호를 찾지 못했어요"); return; }
   S=raw; S.modal=null;
+  // Older saves may be standing in a region opened by level alone. Keep its
+  // progress, level and EXP, and resume in the last sequentially open region.
+  if(!themeOpen(THEMES[S.themeId])){
+    stashTheme();
+    S.themeId=THEME_ORDER.filter(id=>themeOpen(THEMES[id])).pop()||'forest';
+    const saved=S.progress[S.themeId],base=newState();
+    THEME_FIELDS.forEach(k=>{S[k]=saved&&saved[k]!==undefined?saved[k]:base[k];});
+    normalizeQuizProgress(S,THEMES[S.themeId]);
+  }
   applyTheme(S.themeId||'forest');
   if(!S.name||!S.petKey){ go('name'); return; }
   S.scene='world'; Wd.ready=false;
@@ -2549,11 +2580,10 @@ function pgName(){
     <h1 class="title" style="font-size:26px">이름 정하기</h1>
     <div class="dialogue">
       <div class="who">🧚 에코</div>
-      안녕하세요! 저는 정령 <b>에코</b>예요.<br>
-      당신을 뭐라고 부를까요?
+      원정대에서 사용할 이름을 정하세요.
     </div>
     <input class="namefield" id="nameInput" maxlength="8" placeholder="이름 또는 별명">
-    <div class="dialogue">몇 학년인가요?<br>학년에 맞는 <b>수학 문제</b>로 재료를 모으게 돼요 🧮</div>
+    <div class="dialogue">학년을 골라 주세요. 수학 문제의 난이도가 달라져요.</div>
     <div class="toolbar">${[4,5,6].map(g=>`<div class="tool gradebtn ${g===gradePick?'on':''}" data-g="${g}" onclick="setGrade(${g})">
         <div class="ti">${g}</div><div class="tn">초등 ${g}학년</div></div>`).join('')}</div>
     <button class="btn" onclick="submitName()">등록하기</button>
@@ -2612,7 +2642,7 @@ function pgLook(){
   return `<div class="page"><div class="inner" style="justify-content:flex-start;flex:1;gap:10px">
     <h1 class="title" style="font-size:24px;margin:0">캐릭터 꾸미기</h1>
     <div id="lookStage" style="display:flex;justify-content:center;height:124px">${lookPreview()}</div>
-    <div class="dialogue" style="margin:0">마음에 드는 모습으로 바꿔 보세요 ✨</div>
+    <div class="dialogue" style="margin:0">내 캐릭터의 모습을 골라요.</div>
     <div class="looklabel">머리 모양</div>${lookRow('hair',hair)}
     <div class="looklabel">얼굴</div>${lookRow('face',face)}
     <div class="looklabel">옷</div>${lookRow('outfit',outfit)}
@@ -2623,13 +2653,9 @@ function pgLook(){
 }
 function pgStory(){
   return `<div class="page"><div class="inner">
-    <div class="mhead" style="justify-content:center">2030년, 아픈 지구</div>
+    <div class="mhead" style="justify-content:center">숲에서 첫걸음</div>
     <div class="dialogue"><div class="who">🧚 에코</div>
-      사람들이 나무를 베고 쓰레기를 버렸어요.<br>
-      숲과 바다가 병들었고, 저 같은 <b>정령</b>들도 힘을 잃었어요.
-    </div>
-    <div class="dialogue"><div class="who">🧚 에코</div>
-      <b>${NAME()}</b> 님, 저와 함께 <b>숲</b>부터 되살려 주세요!
+      <b>${NAME()}</b> 님, 숲이 많이 아파요.<br>저와 함께 숲부터 돌봐 주세요.
     </div>
     <div class="card" style="text-align:center">
       <div style="font-size:12px;color:rgba(251,246,234,.65);margin-bottom:6px">나의 번호</div>
@@ -2646,18 +2672,15 @@ function pgPet(){
     <div class="petcard ${S.petKey===p.key?'on':''}" onclick="pickPet('${p.key}')">
       <div class="av">${heroSpritePreview(p)}${petSprite(p,44,0)}</div>
       <div class="nm">${p.name}</div>
-      <div class="ds">${p.desc}</div>
       <div class="tag" style="background:rgba(246,201,79,.2);color:var(--gold)">✨ ${p.skill.name}</div>
       <div class="ds" style="font-size:11.5px;line-height:1.5">${p.skill.plain}</div>
-      <div class="ds" style="font-size:10.5px;opacity:.7">${p.skill.tip}</div>
-      <div class="tag">${p.strongIn.join("·")}에서 힘이 세져요</div>
     </div>`).join('');
   return `<div class="page"><div class="inner">
     <div class="dialogue"><div class="who">🧚 에코</div>
-      같이 갈 친구를 골라 주세요.<br>정령마다 <b>처음부터 쓰는 고유 기술</b>이 달라요!
+      함께 탐험할 정령을 골라요.
     </div>
     <div class="petgrid">${cards}</div>
-    <div class="note">이번에는 <b>숲</b>이라서 땅정령이 조금 더 힘이 세요.<br>다음 지역에서는 다른 정령이 활약해요!</div>
+    <div class="note">정령마다 잘하는 일이 달라요.</div>
     <button class="btn" ${S.petKey?'':'disabled'} onclick="go('guide')">이 정령과 함께하기</button>
   </div></div>`;
 }
@@ -2669,32 +2692,15 @@ function pickPet(k){ S.petKey=k; render(); }
 /* ---------- 조작 안내 ---------- */
 function pgGuide(){
   const p=PETS[S.petKey];
-  const spots=CUR.map.objs.map(o=>{
-    const d={lesson:'이야기 듣고 퀴즈 풀기',battle:'오염 몬스터와 싸우기',gather:'도구로 재료 모으기',
-             craft:'재료로 물건 만들기',shop:'장비·회복약 사기',altar:'제단에서 쉬어 가기'}[o.type]||'';
-    return `<div class="itemrow" style="padding:8px 10px">
-      <div class="ico">${o.icon}</div>
-      <div class="tx"><b>${o.cap}</b><small>${d}</small></div></div>`;
-  }).join('');
   return `<div class="page"><div class="inner">
     <div class="dialogue"><div class="who">🧚 에코</div>
       <b>${p.name}</b>${J(p.name,'이','가')} 함께 가기로 했어요!<br>${CUR.name}${JRO(CUR.name)} 들어가 볼까요?
     </div>
-    <div class="card">
-      <div style="font-family:'Do Hyeon',sans-serif;font-size:15px;color:var(--gold);margin-bottom:8px">이렇게 해요</div>
-      <div style="font-size:14px;line-height:2.1">
-        <b>①</b> 버튼으로 걸어다녀요 <span style="opacity:.6">(◀▶▲▼ · 키보드도 됨)</span><br>
-        <b>②</b> <span style="color:var(--gold)">빛나는 동그라미</span> 안으로 들어가요<br>
-        <b>③</b> 활동을 하면 숲이 깨끗해져요<br>
-        <b>④</b> <b>100%</b>가 되면 제단으로 가요
-      </div>
-    </div>
+    <div class="card">방향 버튼으로 움직여요. 빛나는 곳에 다가가 살펴보세요.</div>
     <div class="card" style="border-color:var(--gold)">
       <div style="font-family:'Do Hyeon',sans-serif;font-size:14px;color:var(--gold);margin-bottom:5px">${p.name}의 고유 기술 · ${p.skill.name}</div>
-      <div style="font-size:13.5px">${p.skill.plain} <span style="opacity:.6">(기력 ${p.skill.sp})</span><br><span style="font-size:12px;opacity:.75">${p.skill.tip}</span></div>
+      <div style="font-size:13.5px">${p.skill.plain} <span style="opacity:.6">(기력 ${p.skill.sp})</span></div>
     </div>
-    <div style="font-family:'Do Hyeon',sans-serif;font-size:14px;color:var(--gold)">숲에 있는 곳들</div>
-    <div class="col">${spots}</div>
     <button class="btn" onclick="enterWorld()">숲으로 출발!</button>
   </div></div>`;
 }
@@ -2789,6 +2795,8 @@ function paintHud(){
       <button class="iconbtn" onclick="doSave()">저장<span id="saveDot"></span></button>
     </div>
   </div>`;
+  const root=$('worldRoot');
+  if(root){ Wd.vw=root.clientWidth||900; Wd.vh=root.clientHeight||600; }
   void hpPct;
 }
 
@@ -2796,11 +2804,25 @@ function mountWorld(){
   let seed=Array.from(CUR.id).reduce((n,c)=>Math.imul(n,31)+c.charCodeAt(0),4096)>>>0;
   const artRandom=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   const root=$('worldRoot');
+  const fitViewport=()=>{
+    if(!window.CSS || !CSS.supports('height','100dvh')){
+      document.documentElement.style.setProperty('--game-viewport-height',(window.visualViewport?window.visualViewport.height:window.innerHeight)+'px');
+    }
+  };
+  fitViewport();
   Wd.vw=root.clientWidth||900; Wd.vh=root.clientHeight||600;
+  if(window._worldSizeObserver) window._worldSizeObserver.disconnect();
+  if(typeof ResizeObserver==='function'){
+    window._worldSizeObserver=new ResizeObserver(()=>{
+      Wd.vw=root.clientWidth||900; Wd.vh=root.clientHeight||600;
+    });
+    window._worldSizeObserver.observe(root);
+  }
   if(!window._rz){ window._rz=true; window.addEventListener('resize',()=>{
+    fitViewport();
     const r=document.getElementById('worldRoot');
     if(r){ Wd.vw=r.clientWidth||900; Wd.vh=r.clientHeight||600; }
-  }); }
+  }); if(window.visualViewport) window.visualViewport.addEventListener('resize',fitViewport); }
 
   $('dirtLayer').innerHTML=worldPathSVG();
 
@@ -3226,15 +3248,15 @@ function mMeet(){
     <div class="encounter">
       <div style="filter:drop-shadow(0 6px 8px rgba(0,0,0,.5))">${monsterSVG(curMonIdx(),132)}</div>
       <div class="mon" style="margin-top:6px">${m.name}</div>
-      <div class="note" style="margin-top:2px">${plogging?`플로킹 관문 · 쓰레기 ${PANG_GOAL}개 수거`:`${kindTxt} · 체력 ${ms.hp} · 공격 ${ms.atk}`}</div>
+      <div class="note" style="margin-top:2px">${plogging?'미니게임 관문':`${kindTxt} · 체력 ${ms.hp} · 공격 ${ms.atk}`}</div>
     </div>
     <div class="dialogue"><div class="who">🧚 에코</div>${m.meet}<br>
-      ${plogging?'플로킹으로 주변을 깨끗하게 만들어 볼까요?':'싸우러 <b>들어갈까요?</b>'}</div>
+      ${plogging?'미니게임으로 환경을 지켜 볼까요?':'싸우러 <b>들어갈까요?</b>'}</div>
     ${!plogging&&lowHp?`<div class="hpwarn">⚠️ 지금 체력이 <b>${S.hpCur} / ${st.hpMax}</b> 예요.<br>
         <b>배우는 샘</b>에서 샘물을 마시거나 <b>가게</b>에서 회복약을 사면 좋아요.</div>`:''}
-    ${S.defeatStreak>0?`<div class="note" style="color:var(--gold)">${plogging?`다시 도전하면 하트 +${Math.min(PANG_RETRY_BONUS,S.defeatStreak)}`:`🧚 에코의 도움 +${Math.round(Math.min(S.defeatStreak,BLESS_MAX)*BLESS_STEP*100)}% 를 받고 들어가요`}</div>`:''}
+    ${S.defeatStreak>0?`<div class="note" style="color:var(--gold)">${plogging?'미니게임에 다시 도전해 보세요.':`🧚 에코의 도움 +${Math.round(Math.min(S.defeatStreak,BLESS_MAX)*BLESS_STEP*100)}% 를 받고 들어가요`}</div>`:''}
     <div class="row">
-      <button class="btn" onclick="acceptBattle()">${plogging?'🧹 플로킹 시작':'⚔️ 들어간다'}</button>
+      <button class="btn" onclick="acceptBattle()">${plogging?'🎮 도전하기':'⚔️ 들어간다'}</button>
       <button class="btn sec" onclick="declineBattle()">지금은 그냥 지나간다</button>
     </div>`;
 }
@@ -3864,7 +3886,10 @@ function respawn(){
 }
 function closeBattleDom(){
   stopBattleView();
+  pangStop();
+  miniStop();
   arcStop();
+  animalCareStop();
   const h=$('modalHost'); if(h) h.innerHTML='';
 }
 function leaveBattle(){
@@ -3936,6 +3961,7 @@ function miniWin(hostId, extraLine){
     return;
   }
   S.defeatStreak=0;
+  S.encounterWon=true;
   const gaugeGot=addGauge(m.gauge);
   S.gold+=m.gold; addExp(m.exp);
   const drop=rollDrop(m);
@@ -4017,32 +4043,79 @@ function mountMatch(){
   host.innerHTML=mtHTML();
   const ease=Math.min(3,S.defeatStreak);
   Mt={g:[], sel:null, need:30-ease*4, done:0, moves:30+ease*6, over:false, busy:false};
-  do { mtFill(); } while(mtFindMatch().length);
+  mtFill();
   $('mtNeed').textContent=Mt.need;
   mtPaint();
 }
 function mtFill(){
-  Mt.g=[];
-  for(let i=0;i<MT_N*MT_N;i++) Mt.g.push(Math.floor(Math.random()*MT_ICONS.length));
+  Mt.g=mtCreatePlayableBoard();
 }
-function mtAt(r,c){ return (r<0||c<0||r>=MT_N||c>=MT_N)?-1:Mt.g[r*MT_N+c]; }
+function mtAt(r,c,g=Mt.g){ return (r<0||c<0||r>=MT_N||c>=MT_N)?-1:g[r*MT_N+c]; }
 function mtSet(r,c,v){ Mt.g[r*MT_N+c]=v; }
 /* 세 개 이상 이어진 자리를 모두 찾는다 */
-function mtFindMatch(){
+function mtFindMatch(g=Mt.g){
   const hit=new Set();
   for(let r=0;r<MT_N;r++) for(let c=0;c<MT_N-2;c++){
-    const v=mtAt(r,c);
-    if(v>=0 && v===mtAt(r,c+1) && v===mtAt(r,c+2)){
-      let c2=c; while(mtAt(r,c2)===v && c2<MT_N){ hit.add(r*MT_N+c2); c2++; }
+    const v=mtAt(r,c,g);
+    if(v>=0 && v===mtAt(r,c+1,g) && v===mtAt(r,c+2,g)){
+      let c2=c; while(mtAt(r,c2,g)===v && c2<MT_N){ hit.add(r*MT_N+c2); c2++; }
     }
   }
   for(let c=0;c<MT_N;c++) for(let r=0;r<MT_N-2;r++){
-    const v=mtAt(r,c);
-    if(v>=0 && v===mtAt(r+1,c) && v===mtAt(r+2,c)){
-      let r2=r; while(mtAt(r2,c)===v && r2<MT_N){ hit.add(r2*MT_N+c); r2++; }
+    const v=mtAt(r,c,g);
+    if(v>=0 && v===mtAt(r+1,c,g) && v===mtAt(r+2,c,g)){
+      let r2=r; while(mtAt(r2,c,g)===v && r2<MT_N){ hit.add(r2*MT_N+c); r2++; }
     }
   }
   return [...hit];
+}
+/* Each adjacent pair is tried once; restore the board before returning. */
+function mtHasValidMove(g=Mt.g){
+  for(let r=0;r<MT_N;r++) for(let c=0;c<MT_N;c++){
+    const a=r*MT_N+c;
+    for(const b of [c+1<MT_N?a+1:-1,r+1<MT_N?a+MT_N:-1]){
+      if(b<0 || g[a]<0 || g[b]<0 || g[a]===g[b]) continue;
+      [g[a],g[b]]=[g[b],g[a]];
+      const valid=mtFindMatch(g).some(i=>i===a || i===b);
+      [g[a],g[b]]=[g[b],g[a]];
+      if(valid) return true;
+    }
+  }
+  return false;
+}
+function mtCreatePlayableBoard(){
+  for(let attempt=0;attempt<40;attempt++){
+    const g=Array.from({length:MT_N*MT_N},()=>Math.floor(Math.random()*MT_ICONS.length));
+    if(!mtFindMatch(g).length && mtHasValidMove(g)) return g;
+  }
+  // A B A / _ A _ guarantees one swap. Fill the rest without ready matches.
+  const a=Math.floor(Math.random()*MT_ICONS.length);
+  const b=(a+1+Math.floor(Math.random()*(MT_ICONS.length-1)))%MT_ICONS.length;
+  const fixed={0:a,1:b,2:a,[MT_N+1]:a},g=[];
+  for(let r=0;r<MT_N;r++) for(let c=0;c<MT_N;c++){
+    const i=r*MT_N+c;
+    if(Object.prototype.hasOwnProperty.call(fixed,i)){ g[i]=fixed[i]; continue; }
+    const choices=[];
+    for(let v=0;v<MT_ICONS.length;v++){
+      if(c>=2 && g[i-1]===v && g[i-2]===v) continue;
+      if(r>=2 && g[i-MT_N]===v && g[i-MT_N*2]===v) continue;
+      choices.push(v);
+    }
+    g[i]=choices[Math.floor(Math.random()*choices.length)];
+  }
+  return g;
+}
+function mtShuffle(){
+  const original=Mt.g.slice();
+  for(let attempt=0;attempt<40;attempt++){
+    const g=original.slice();
+    for(let i=g.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [g[i],g[j]]=[g[j],g[i]];
+    }
+    if(!mtFindMatch(g).length && mtHasValidMove(g)){ Mt.g=g; return; }
+  }
+  Mt.g=mtCreatePlayableBoard();
 }
 function mtPaint(){
   const g=$('mtGrid'); if(!g) return;
@@ -4061,6 +4134,7 @@ function mtPaint(){
 }
 function mtTap(i){
   if(!Mt||Mt.over||Mt.busy) return;
+  const msg=$('mtMsg'); if(msg) msg.textContent='붙어 있는 둘을 차례로 눌러 자리를 바꿔요';
   if(Mt.sel===null){ Mt.sel=i; mtPaint(); return; }
   if(Mt.sel===i){ Mt.sel=null; mtPaint(); return; }
   const r1=Math.floor(Mt.sel/MT_N), c1=Mt.sel%MT_N, r2=Math.floor(i/MT_N), c2=i%MT_N;
@@ -4084,6 +4158,11 @@ function mtResolve(){
     Mt.busy=false;
     if(Mt.done>=Mt.need){ mtWin(); return; }
     if(Mt.moves<=0){ mtLose(); return; }
+    if(!mtHasValidMove()){
+      Mt.sel=null;
+      mtShuffle();
+      const msg=$('mtMsg'); if(msg) msg.textContent='가능한 조합이 없어 다시 섞어요!';
+    }
     mtPaint(); return;
   }
   hit.forEach(i=>{ Mt.g[i]=-1; });
@@ -4168,10 +4247,10 @@ function rnPaintHero(){
   if(url) el.style.backgroundImage = `url('${url}')`;
 }
 
-// runner mode keeps existing encounters and reward routing.
-function mountRunner(){ arcMount('runner'); }
+// The runner ID stays in saves and encounter routing; its screen is animal care.
+function mountRunner(){ animalCareMount(); }
 function retryRunner(){ mountRunner(); }
-function rnStop(){ arcStop(); }
+function rnStop(){ animalCareStop(); }
 
 /* 정화 구슬: 기존 퍼즐 유지 */
 var Sp=null;
@@ -4892,7 +4971,7 @@ function rPaintHud(){
     const prod=Object.entries(S.produce).filter(([k,v])=>v>0)
       .map(([k,v])=>`<span class="chip">${itemInfo(k).nm} ${v}</span>`).join('');
     const bloom=F.plots.filter(p=>p.seed&&p.stage>=3).length;
-    el.innerHTML=`<span class="chip farm-build">${ECO_BUILD_ID}</span><span class="chip">📅 ${S.day}일째</span><span class="chip" style="${canLeft()?'':'background:rgba(212,64,64,.32)'}">💧 ${canLeft()}/${canCap()}</span>
+    el.innerHTML=`<span class="chip">📅 ${S.day}일째</span><span class="chip" style="${canLeft()?'':'background:rgba(212,64,64,.32)'}">💧 ${canLeft()}/${canCap()}</span>
       <span class="chip">🌰 씨앗 ${seeds}</span>
       <span class="chip">🌸 수확 가능 ${bloom}</span>
       <span class="chip">🐔 우리 ${F.pens.filter(Boolean).length}/${PENS}</span>
@@ -6066,7 +6145,7 @@ function mBag(){
   return `<div class="mhead"><span>🎒 ${NAME()}의 가방</span><span style="font-size:12px">번호 ${esc(S.code)}</span></div>
     <div class="card">
       <div style="font-size:13.5px;line-height:2">
-        레벨 <b>Lv.${S.lv}</b> ${need!==null?`<span style="opacity:.6">(다음 레벨까지 ${need-S.exp} EXP)</span>`:'<span style="opacity:.6">(최대)</span>'}<br>
+        레벨 <b>Lv.${S.lv}</b> ${need!==null?`<span style="opacity:.6">(다음 레벨까지 ${Math.max(0,need-S.exp)} EXP)</span>`:'<span style="opacity:.6">(최대)</span>'}<br>
         체력 <b>${S.hpCur} / ${st.hpMax}</b> · 공격 <b>${st.atk}</b> · 방어 <b>${st.def}</b> · SP <b>${st.spMax}</b><br>
         골드 <b>${S.gold}</b> · 뽑기권 <b>${S.tickets}</b>장 · 회복약 <b>${S.potions}</b>개
       </div>
@@ -6109,6 +6188,11 @@ function mDex(){
    클리어 / 여정 지도 / 수료증
    ========================================================== */
 function pgClear(){
+  if(!themeOpen(CUR)||(!S.cleared.includes(CUR.id)&&S.gauge<100)){
+    return `<div class="page"><div class="inner"><h1 class="title">정화를 더 해 주세요</h1>
+      <div class="card">정화를 100% 채운 뒤 제단에서 지역을 되살릴 수 있어요.</div>
+      <button class="btn" onclick="S.scene='world';Wd.ready=false;render()">지역으로 돌아가기</button></div></div>`;
+  }
   if(!S.cleared.includes(CUR.id)){ S.cleared.push(CUR.id); autosave(); }
   const nx = CUR.next ? THEMES[CUR.next] : null;
   const allDone = THEME_ORDER.every(id=>S.cleared.includes(id));
@@ -6123,7 +6207,7 @@ function pgClear(){
         : (nx
             ? (canGo
                 ? `다음은 <b>${nx.name}</b>이에요. 준비됐나요? ${nx.icon}`
-                : `다음은 <b>${nx.name}</b>이에요. <b>Lv.${nx.levelGate}</b>가 되면 갈 수 있어요. ${nx.icon}`)
+                : themeLockMessage(nx))
             : '고생 많았어요!')}
     </div>
     <div class="card">
@@ -6151,20 +6235,20 @@ function pgThemes(){
     const done=S.cleared.includes(id);
     const here=(id===S.themeId);
     const open=themeOpen(t);
-    const state = done ? '<span style="color:var(--green)">✅ 정화 완료</span>'
+    const state = !open ? (t.ready ? '<span>🔒 이전 지역 정화 필요</span>' : '<span style="opacity:.7">🚧 준비 중</span>')
+      : done ? '<span style="color:var(--green)">✅ 정화 완료</span>'
       : here ? '<span style="color:var(--gold)">📍 지금 여기</span>'
-      : open ? '<span style="color:var(--gold)">▶ 들어갈 수 있어요</span>'
-      : (t.ready ? `<span style="opacity:.7">🔒 Lv.${t.levelGate} 필요</span>`
-                 : '<span style="opacity:.7">🚧 준비 중</span>');
+      : '<span style="color:var(--gold)">▶ 들어갈 수 있어요</span>';
     const pr=S.progress&&S.progress[id];
     const gg = here ? S.gauge : (pr?pr.gauge:0);
-    return `<div class="themecard ${t.ready?'':'lock'}">
+    return `<div class="themecard ${open?'':'lock'}">
       <div class="ti">${t.icon}</div>
       <div class="tx" style="flex:1">
         <b>제${t.chapter}장 · ${t.name}</b>
         <small>${t.title} · ${state}${gg?` · 정화 ${gg}%`:''}</small>
       </div>
       ${(open&&!here)?`<button onclick="enterTheme('${id}')">${done?'다시 가기':'출발'}</button>`:''}
+      ${(!open&&t.ready)?`<button onclick="enterTheme('${id}')" aria-label="${t.name} 잠김">🔒 잠김</button>`:''}
       ${here?`<button onclick="S.scene='world';Wd.ready=false;render()">돌아가기</button>`:''}
     </div>`;
   }).join('');
@@ -6174,7 +6258,7 @@ function pgThemes(){
     <div class="dialogue"><div class="who">🧚 에코</div>
       ${allDone
         ? '<b>여섯 지역을 모두 되살렸어요!</b> 지구의 균형이 돌아왔어요. 정말 대단해요 🌍'
-        : '여섯 지역을 모두 되살리면 지구의 균형이 돌아와요.<br>레벨이 오르면 새 지역이 열려요!'}
+        : '여섯 지역을 모두 되살리면 지구의 균형이 돌아와요.<br>한 지역을 정화하면 다음 지역이 열려요!'}
     </div>
     <div class="col">${rows}</div>
     <div class="note">레벨·골드·회복약은 지역이 바뀌어도 이어져요.<br>지역별 진행 상황은 따로 저장되니 언제든 다시 갈 수 있어요.</div>
@@ -6186,6 +6270,11 @@ function pgThemes(){
 }
 
 function pgCert(){
+  if(!S.cleared.includes(CUR.id)){
+    return `<div class="page"><div class="inner"><h1 class="title">수료증</h1>
+      <div class="card">이 지역을 정화하면 수료증을 받을 수 있어요.</div>
+      <button class="btn sec" onclick="go('themes')">지도로 돌아가기</button></div></div>`;
+  }
   const d=new Date();
   const ymd=`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`;
   return `<div class="page"><div class="inner">
@@ -6194,7 +6283,7 @@ function pgCert(){
       <div style="font-size:12px;color:#7a6a4a">제 ${esc(S.code)} 호</div>
       <div class="nm">${NAME()}</div>
       <p>
-        위 사람은 「에코 크로니클」 제${CUR.chapter}장 <b>${CUR.title}</b>에서<br>
+        위 사람은 「환경 원정대」 제${CUR.chapter}장 <b>${CUR.title}</b>에서<br>
         ${CUR.name} 생태계의 구조와 환경 오염 문제를 배우고,<br>
         정화 활동을 성실히 수행하여 ${CUR.name}${J(CUR.name,'을','를')} 완전히 되살렸으므로<br>
         이 수료증을 수여합니다.
@@ -6203,7 +6292,7 @@ function pgCert(){
         정화 달성 ${S.gauge}% · 레벨 Lv.${S.lv} · 퀴즈 ${qCorrect()}/${CUR.quiz.length}문항 정답<br>
         생물 도감 ${S.dex.length}/${CUR.creatures.length}종 등록${S.boxOpen?' · 비밀 상자 해제':''}
       </p>
-      <div class="seal">${ymd}<br><b>정령 에코 · 에코 크로니클 운영진</b> 🌿</div>
+      <div class="seal">${ymd}<br><b>정령 에코 · 환경 원정대</b> 🌿</div>
     </div>
     <div class="row noprint">
       <button class="btn" onclick="window.print()">인쇄 / PDF 저장</button>
