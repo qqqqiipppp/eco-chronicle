@@ -500,7 +500,7 @@ function pangStop(){
 function pangWin(){
   if(!Pg||Pg.over||S.modal!=='pang')return;
   Pg.over=true;pangStop();
-  if(Tw.on)return miniWin('pgResult',`플로킹 성공! · 수거한 쓰레기 <b>${Pg.count}개</b>`);
+  if((typeof InterludeRun!=='undefined'&&InterludeRun)||Tw.on)return miniWin('pgResult',`플로킹 성공! · 수거한 쓰레기 <b>${Pg.count}개</b>`);
   const m=curMon();S.defeatStreak=0;S.encounterWon=true;
   const gaugeGot=addGauge(m.gauge);S.gold+=m.gold;addExp(m.exp);
   const drop=rollDrop(m);autosave();
@@ -520,6 +520,11 @@ function pangWin(){
   </div></div>`;
 }
 function pangLose(reason){
+  if(typeof InterludeRun!=='undefined'&&InterludeRun){
+    if(!Pg||Pg.over||S.modal!=='pang')return;
+    Pg.over=true;pangStop();
+    return miniLose('pgResult',reason==='heart'?'방해를 너무 많이 받았어요.':'아직 치우지 못한 쓰레기가 남아 있어요.','retryPang()');
+  }
   if(Tw.on){pangStop();towerRetire('faint');return;}
   if(!Pg||Pg.over||S.modal!=='pang')return;
   Pg.over=true;pangStop();

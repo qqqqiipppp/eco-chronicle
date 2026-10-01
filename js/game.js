@@ -31,15 +31,15 @@ var SOLID_ARTS = {"rock": {"r": 22, "dy": 12}, "stump": {"r": 17, "dy": 6}, "log
    ========================================================== */
 var LEVELS = [
   {lv:1, need:0,   hp:60,  atk:13, def:7,  sp:25},
-  {lv:2, need:40,  hp:70,  atk:16, def:9,  sp:30},
-  {lv:3, need:100, hp:80,  atk:19, def:11, sp:35},
-  {lv:4, need:180, hp:90,  atk:22, def:13, sp:40},
-  {lv:5, need:280, hp:100, atk:25, def:15, sp:45},
-  {lv:6, need:400, hp:110, atk:28, def:17, sp:50},
-  {lv:7, need:560, hp:124, atk:31, def:19, sp:56},
-  {lv:8, need:760, hp:138, atk:34, def:21, sp:62},
-  {lv:9, need:1000,hp:152, atk:37, def:23, sp:68},
-  {lv:10,need:1300,hp:168, atk:41, def:26, sp:76}
+  {lv:2, need:48,  hp:70,  atk:16, def:9,  sp:30},
+  {lv:3, need:120, hp:80,  atk:19, def:11, sp:35},
+  {lv:4, need:216, hp:90,  atk:22, def:13, sp:40},
+  {lv:5, need:336, hp:100, atk:25, def:15, sp:45},
+  {lv:6, need:480, hp:110, atk:28, def:17, sp:50},
+  {lv:7, need:672, hp:124, atk:31, def:19, sp:56},
+  {lv:8, need:912, hp:138, atk:34, def:21, sp:62},
+  {lv:9, need:1200,hp:152, atk:37, def:23, sp:68},
+  {lv:10,need:1560,hp:168, atk:41, def:26, sp:76}
 ];
 var MAX_LV = LEVELS.length;
 
@@ -1809,7 +1809,7 @@ function mShadowLose(){
 
 /* ==========================================================
    몬스터의 탑 — 한 층씩 올라가며 겨루는 도전 모드
-     7층 주기: 전투1 → 달리기 → 전투2 → 전투3 → 도약 → 전투4 → 보스
+     7층 주기: 전투1 → 미니게임 → 전투2 → 전투3 → 미니게임 → 전투4 → 보스
      쓰러지면 1층부터 다시 — 기록(층·시간)만 남는다
    ========================================================== */
 var Tw={on:false, floor:1, t0:0, mon:null, quizIdx:0, tries:0, best:0};
@@ -2086,7 +2086,7 @@ function statBar(now, max, col){
 function mStatus(){
   const st=baseStats(), L=lvInfo(S.lv);
   const need=nextNeed();
-  const prev=(S.lv>1)?LEVELS[S.lv-2].need:0;
+  const prev=LEVELS[S.lv-1].need;
   const expNow=Math.max(0,S.exp-prev), expNeed=need?need-prev:1;
   const bare={hpMax:L.hp, atk:L.atk, def:L.def, spMax:L.sp};
   const slots=['weapon','armor','helm','shoes'].map(sl=>{
@@ -2134,7 +2134,7 @@ function mStatus(){
       <div style="font-size:11.5px;opacity:.75">경험치</div>
       ${statBar(expNow, expNeed, 'var(--gold)')}
       <div style="font-size:12px;margin-top:3px">
-        ${need ? `${expNow} / ${expNeed} · 다음 레벨까지 ${expNeed-expNow}` : '최고 레벨에 닿았어요'}</div></div>
+        ${need ? `${expNow} / ${expNeed} · 다음 레벨까지 ${Math.max(0,need-S.exp)}` : '최고 레벨에 닿았어요'}</div></div>
     <div class="card" style="padding:10px 12px">
       ${row('공격', st.atk, bare.atk, '⚔️')}
       ${row('방어', st.def, bare.def, '🛡️')}
@@ -2386,13 +2386,23 @@ function stashTheme(){
   THEME_FIELDS.forEach(k=>{ o[k]=S[k]; });
   S.progress[S.themeId]=o;
 }
-function themeOpen(t){ return !!(t && t.ready && S.lv>=t.levelGate); }
+function themeOpen(t){
+  if(!t || !t.ready)return false;
+  if(Adm.on)return true;
+  const index=THEME_ORDER.indexOf(t.id);
+  return index>=0 && THEME_ORDER.slice(0,index).every(id=>(S.cleared||[]).includes(id));
+}
+function themeLockMessage(t){
+  const index=THEME_ORDER.indexOf(t.id);
+  const missing=THEME_ORDER.slice(0,index).find(id=>!(S.cleared||[]).includes(id));
+  return missing ? `먼저 ${THEMES[missing].name} 지역을 정화해야 해요.` : '아직 준비 중인 지역이에요.';
+}
 
 function enterTheme(id){
   const t=THEMES[id];
   if(!t){ return; }
   if(!t.ready){ toast("아직 준비 중인 지역이에요"); return; }
-  if(S.lv<t.levelGate){ toast(`${t.icon} ${t.name}${JRO(t.name)} 가려면 <b>Lv.${t.levelGate}</b>가 필요해요`); return; }
+  if(!themeOpen(t)){ toast(themeLockMessage(t)); return; }
   if(id===S.themeId){ S.scene='world'; Wd.ready=false; render(); return; }
 
   stashTheme();
@@ -2524,6 +2534,15 @@ function quickLoad(code){
   const raw=Save.load(code);
   if(!raw){ toast("그 번호를 찾지 못했어요"); return; }
   S=raw; S.modal=null;
+  // Older saves may be standing in a region opened by level alone. Keep its
+  // progress, level and EXP, and resume in the last sequentially open region.
+  if(!themeOpen(THEMES[S.themeId])){
+    stashTheme();
+    S.themeId=THEME_ORDER.filter(id=>themeOpen(THEMES[id])).pop()||'forest';
+    const saved=S.progress[S.themeId],base=newState();
+    THEME_FIELDS.forEach(k=>{S[k]=saved&&saved[k]!==undefined?saved[k]:base[k];});
+    normalizeQuizProgress(S,THEMES[S.themeId]);
+  }
   applyTheme(S.themeId||'forest');
   if(!S.name||!S.petKey){ go('name'); return; }
   S.scene='world'; Wd.ready=false;
@@ -3197,15 +3216,15 @@ function mMeet(){
     <div class="encounter">
       <div style="filter:drop-shadow(0 6px 8px rgba(0,0,0,.5))">${monsterSVG(curMonIdx(),132)}</div>
       <div class="mon" style="margin-top:6px">${m.name}</div>
-      <div class="note" style="margin-top:2px">${plogging?`플로킹 관문 · 쓰레기 ${PANG_GOAL}개 수거`:`${kindTxt} · 체력 ${ms.hp} · 공격 ${ms.atk}`}</div>
+      <div class="note" style="margin-top:2px">${plogging?'미니게임 관문':`${kindTxt} · 체력 ${ms.hp} · 공격 ${ms.atk}`}</div>
     </div>
     <div class="dialogue"><div class="who">🧚 에코</div>${m.meet}<br>
-      ${plogging?'플로킹으로 주변을 깨끗하게 만들어 볼까요?':'싸우러 <b>들어갈까요?</b>'}</div>
+      ${plogging?'미니게임으로 환경을 지켜 볼까요?':'싸우러 <b>들어갈까요?</b>'}</div>
     ${!plogging&&lowHp?`<div class="hpwarn">⚠️ 지금 체력이 <b>${S.hpCur} / ${st.hpMax}</b> 예요.<br>
         <b>배우는 샘</b>에서 샘물을 마시거나 <b>가게</b>에서 회복약을 사면 좋아요.</div>`:''}
-    ${S.defeatStreak>0?`<div class="note" style="color:var(--gold)">${plogging?`다시 도전하면 하트 +${Math.min(PANG_RETRY_BONUS,S.defeatStreak)}`:`🧚 에코의 도움 +${Math.round(Math.min(S.defeatStreak,BLESS_MAX)*BLESS_STEP*100)}% 를 받고 들어가요`}</div>`:''}
+    ${S.defeatStreak>0?`<div class="note" style="color:var(--gold)">${plogging?'미니게임에 다시 도전해 보세요.':`🧚 에코의 도움 +${Math.round(Math.min(S.defeatStreak,BLESS_MAX)*BLESS_STEP*100)}% 를 받고 들어가요`}</div>`:''}
     <div class="row">
-      <button class="btn" onclick="acceptBattle()">${plogging?'🧹 플로킹 시작':'⚔️ 들어간다'}</button>
+      <button class="btn" onclick="acceptBattle()">${plogging?'🎮 도전하기':'⚔️ 들어간다'}</button>
       <button class="btn sec" onclick="declineBattle()">지금은 그냥 지나간다</button>
     </div>`;
 }
@@ -3717,6 +3736,8 @@ function respawn(){
 }
 function closeBattleDom(){
   stopBattleView();
+  pangStop();
+  miniStop();
   arcStop();
   animalCareStop();
   const h=$('modalHost'); if(h) h.innerHTML='';
@@ -3790,6 +3811,7 @@ function miniWin(hostId, extraLine){
     return;
   }
   S.defeatStreak=0;
+  S.encounterWon=true;
   const gaugeGot=addGauge(m.gauge);
   S.gold+=m.gold; addExp(m.exp);
   const drop=rollDrop(m);
@@ -5920,7 +5942,7 @@ function mBag(){
   return `<div class="mhead"><span>🎒 ${NAME()}의 가방</span><span style="font-size:12px">번호 ${esc(S.code)}</span></div>
     <div class="card">
       <div style="font-size:13.5px;line-height:2">
-        레벨 <b>Lv.${S.lv}</b> ${need!==null?`<span style="opacity:.6">(다음 레벨까지 ${need-S.exp} EXP)</span>`:'<span style="opacity:.6">(최대)</span>'}<br>
+        레벨 <b>Lv.${S.lv}</b> ${need!==null?`<span style="opacity:.6">(다음 레벨까지 ${Math.max(0,need-S.exp)} EXP)</span>`:'<span style="opacity:.6">(최대)</span>'}<br>
         체력 <b>${S.hpCur} / ${st.hpMax}</b> · 공격 <b>${st.atk}</b> · 방어 <b>${st.def}</b> · SP <b>${st.spMax}</b><br>
         골드 <b>${S.gold}</b> · 뽑기권 <b>${S.tickets}</b>장 · 회복약 <b>${S.potions}</b>개
       </div>
@@ -5963,6 +5985,11 @@ function mDex(){
    클리어 / 여정 지도 / 수료증
    ========================================================== */
 function pgClear(){
+  if(!themeOpen(CUR)||(!S.cleared.includes(CUR.id)&&S.gauge<100)){
+    return `<div class="page"><div class="inner"><h1 class="title">정화를 더 해 주세요</h1>
+      <div class="card">정화를 100% 채운 뒤 제단에서 지역을 되살릴 수 있어요.</div>
+      <button class="btn" onclick="S.scene='world';Wd.ready=false;render()">지역으로 돌아가기</button></div></div>`;
+  }
   if(!S.cleared.includes(CUR.id)){ S.cleared.push(CUR.id); autosave(); }
   const nx = CUR.next ? THEMES[CUR.next] : null;
   const allDone = THEME_ORDER.every(id=>S.cleared.includes(id));
@@ -5977,7 +6004,7 @@ function pgClear(){
         : (nx
             ? (canGo
                 ? `다음은 <b>${nx.name}</b>이에요. 준비됐나요? ${nx.icon}`
-                : `다음은 <b>${nx.name}</b>이에요. <b>Lv.${nx.levelGate}</b>가 되면 갈 수 있어요. ${nx.icon}`)
+                : themeLockMessage(nx))
             : '고생 많았어요!')}
     </div>
     <div class="card">
@@ -6005,20 +6032,20 @@ function pgThemes(){
     const done=S.cleared.includes(id);
     const here=(id===S.themeId);
     const open=themeOpen(t);
-    const state = done ? '<span style="color:var(--green)">✅ 정화 완료</span>'
+    const state = !open ? (t.ready ? '<span>🔒 이전 지역 정화 필요</span>' : '<span style="opacity:.7">🚧 준비 중</span>')
+      : done ? '<span style="color:var(--green)">✅ 정화 완료</span>'
       : here ? '<span style="color:var(--gold)">📍 지금 여기</span>'
-      : open ? '<span style="color:var(--gold)">▶ 들어갈 수 있어요</span>'
-      : (t.ready ? `<span style="opacity:.7">🔒 Lv.${t.levelGate} 필요</span>`
-                 : '<span style="opacity:.7">🚧 준비 중</span>');
+      : '<span style="color:var(--gold)">▶ 들어갈 수 있어요</span>';
     const pr=S.progress&&S.progress[id];
     const gg = here ? S.gauge : (pr?pr.gauge:0);
-    return `<div class="themecard ${t.ready?'':'lock'}">
+    return `<div class="themecard ${open?'':'lock'}">
       <div class="ti">${t.icon}</div>
       <div class="tx" style="flex:1">
         <b>제${t.chapter}장 · ${t.name}</b>
         <small>${t.title} · ${state}${gg?` · 정화 ${gg}%`:''}</small>
       </div>
       ${(open&&!here)?`<button onclick="enterTheme('${id}')">${done?'다시 가기':'출발'}</button>`:''}
+      ${(!open&&t.ready)?`<button onclick="enterTheme('${id}')" aria-label="${t.name} 잠김">🔒 잠김</button>`:''}
       ${here?`<button onclick="S.scene='world';Wd.ready=false;render()">돌아가기</button>`:''}
     </div>`;
   }).join('');
@@ -6028,7 +6055,7 @@ function pgThemes(){
     <div class="dialogue"><div class="who">🧚 에코</div>
       ${allDone
         ? '<b>여섯 지역을 모두 되살렸어요!</b> 지구의 균형이 돌아왔어요. 정말 대단해요 🌍'
-        : '여섯 지역을 모두 되살리면 지구의 균형이 돌아와요.<br>레벨이 오르면 새 지역이 열려요!'}
+        : '여섯 지역을 모두 되살리면 지구의 균형이 돌아와요.<br>한 지역을 정화하면 다음 지역이 열려요!'}
     </div>
     <div class="col">${rows}</div>
     <div class="note">레벨·골드·회복약은 지역이 바뀌어도 이어져요.<br>지역별 진행 상황은 따로 저장되니 언제든 다시 갈 수 있어요.</div>
@@ -6040,6 +6067,11 @@ function pgThemes(){
 }
 
 function pgCert(){
+  if(!S.cleared.includes(CUR.id)){
+    return `<div class="page"><div class="inner"><h1 class="title">수료증</h1>
+      <div class="card">이 지역을 정화하면 수료증을 받을 수 있어요.</div>
+      <button class="btn sec" onclick="go('themes')">지도로 돌아가기</button></div></div>`;
+  }
   const d=new Date();
   const ymd=`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`;
   return `<div class="page"><div class="inner">
