@@ -3893,32 +3893,79 @@ function mountMatch(){
   host.innerHTML=mtHTML();
   const ease=Math.min(3,S.defeatStreak);
   Mt={g:[], sel:null, need:30-ease*4, done:0, moves:30+ease*6, over:false, busy:false};
-  do { mtFill(); } while(mtFindMatch().length);
+  mtFill();
   $('mtNeed').textContent=Mt.need;
   mtPaint();
 }
 function mtFill(){
-  Mt.g=[];
-  for(let i=0;i<MT_N*MT_N;i++) Mt.g.push(Math.floor(Math.random()*MT_ICONS.length));
+  Mt.g=mtCreatePlayableBoard();
 }
-function mtAt(r,c){ return (r<0||c<0||r>=MT_N||c>=MT_N)?-1:Mt.g[r*MT_N+c]; }
+function mtAt(r,c,g=Mt.g){ return (r<0||c<0||r>=MT_N||c>=MT_N)?-1:g[r*MT_N+c]; }
 function mtSet(r,c,v){ Mt.g[r*MT_N+c]=v; }
 /* 세 개 이상 이어진 자리를 모두 찾는다 */
-function mtFindMatch(){
+function mtFindMatch(g=Mt.g){
   const hit=new Set();
   for(let r=0;r<MT_N;r++) for(let c=0;c<MT_N-2;c++){
-    const v=mtAt(r,c);
-    if(v>=0 && v===mtAt(r,c+1) && v===mtAt(r,c+2)){
-      let c2=c; while(mtAt(r,c2)===v && c2<MT_N){ hit.add(r*MT_N+c2); c2++; }
+    const v=mtAt(r,c,g);
+    if(v>=0 && v===mtAt(r,c+1,g) && v===mtAt(r,c+2,g)){
+      let c2=c; while(mtAt(r,c2,g)===v && c2<MT_N){ hit.add(r*MT_N+c2); c2++; }
     }
   }
   for(let c=0;c<MT_N;c++) for(let r=0;r<MT_N-2;r++){
-    const v=mtAt(r,c);
-    if(v>=0 && v===mtAt(r+1,c) && v===mtAt(r+2,c)){
-      let r2=r; while(mtAt(r2,c)===v && r2<MT_N){ hit.add(r2*MT_N+c); r2++; }
+    const v=mtAt(r,c,g);
+    if(v>=0 && v===mtAt(r+1,c,g) && v===mtAt(r+2,c,g)){
+      let r2=r; while(mtAt(r2,c,g)===v && r2<MT_N){ hit.add(r2*MT_N+c); r2++; }
     }
   }
   return [...hit];
+}
+/* Each adjacent pair is tried once; restore the board before returning. */
+function mtHasValidMove(g=Mt.g){
+  for(let r=0;r<MT_N;r++) for(let c=0;c<MT_N;c++){
+    const a=r*MT_N+c;
+    for(const b of [c+1<MT_N?a+1:-1,r+1<MT_N?a+MT_N:-1]){
+      if(b<0 || g[a]<0 || g[b]<0 || g[a]===g[b]) continue;
+      [g[a],g[b]]=[g[b],g[a]];
+      const valid=mtFindMatch(g).some(i=>i===a || i===b);
+      [g[a],g[b]]=[g[b],g[a]];
+      if(valid) return true;
+    }
+  }
+  return false;
+}
+function mtCreatePlayableBoard(){
+  for(let attempt=0;attempt<40;attempt++){
+    const g=Array.from({length:MT_N*MT_N},()=>Math.floor(Math.random()*MT_ICONS.length));
+    if(!mtFindMatch(g).length && mtHasValidMove(g)) return g;
+  }
+  // A B A / _ A _ guarantees one swap. Fill the rest without ready matches.
+  const a=Math.floor(Math.random()*MT_ICONS.length);
+  const b=(a+1+Math.floor(Math.random()*(MT_ICONS.length-1)))%MT_ICONS.length;
+  const fixed={0:a,1:b,2:a,[MT_N+1]:a},g=[];
+  for(let r=0;r<MT_N;r++) for(let c=0;c<MT_N;c++){
+    const i=r*MT_N+c;
+    if(Object.prototype.hasOwnProperty.call(fixed,i)){ g[i]=fixed[i]; continue; }
+    const choices=[];
+    for(let v=0;v<MT_ICONS.length;v++){
+      if(c>=2 && g[i-1]===v && g[i-2]===v) continue;
+      if(r>=2 && g[i-MT_N]===v && g[i-MT_N*2]===v) continue;
+      choices.push(v);
+    }
+    g[i]=choices[Math.floor(Math.random()*choices.length)];
+  }
+  return g;
+}
+function mtShuffle(){
+  const original=Mt.g.slice();
+  for(let attempt=0;attempt<40;attempt++){
+    const g=original.slice();
+    for(let i=g.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [g[i],g[j]]=[g[j],g[i]];
+    }
+    if(!mtFindMatch(g).length && mtHasValidMove(g)){ Mt.g=g; return; }
+  }
+  Mt.g=mtCreatePlayableBoard();
 }
 function mtPaint(){
   const g=$('mtGrid'); if(!g) return;
@@ -3937,6 +3984,7 @@ function mtPaint(){
 }
 function mtTap(i){
   if(!Mt||Mt.over||Mt.busy) return;
+  const msg=$('mtMsg'); if(msg) msg.textContent='붙어 있는 둘을 차례로 눌러 자리를 바꿔요';
   if(Mt.sel===null){ Mt.sel=i; mtPaint(); return; }
   if(Mt.sel===i){ Mt.sel=null; mtPaint(); return; }
   const r1=Math.floor(Mt.sel/MT_N), c1=Mt.sel%MT_N, r2=Math.floor(i/MT_N), c2=i%MT_N;
@@ -3960,6 +4008,11 @@ function mtResolve(){
     Mt.busy=false;
     if(Mt.done>=Mt.need){ mtWin(); return; }
     if(Mt.moves<=0){ mtLose(); return; }
+    if(!mtHasValidMove()){
+      Mt.sel=null;
+      mtShuffle();
+      const msg=$('mtMsg'); if(msg) msg.textContent='가능한 조합이 없어 다시 섞어요!';
+    }
     mtPaint(); return;
   }
   hit.forEach(i=>{ Mt.g[i]=-1; });
