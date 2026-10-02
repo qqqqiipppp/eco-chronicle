@@ -39,7 +39,12 @@ var LEVELS = [
   {lv:7, need:672, hp:124, atk:31, def:19, sp:56},
   {lv:8, need:912, hp:138, atk:34, def:21, sp:62},
   {lv:9, need:1200,hp:152, atk:37, def:23, sp:68},
-  {lv:10,need:1560,hp:168, atk:41, def:26, sp:76}
+  {lv:10,need:1560,hp:168, atk:41, def:26, sp:76},
+  {lv:11,need:1980,hp:184, atk:45, def:29, sp:84},
+  {lv:12,need:2460,hp:200, atk:49, def:32, sp:92},
+  {lv:13,need:3000,hp:216, atk:53, def:35, sp:100},
+  {lv:14,need:3600,hp:232, atk:57, def:38, sp:108},
+  {lv:15,need:4260,hp:248, atk:61, def:41, sp:116}
 ];
 var MAX_LV = LEVELS.length;
 
