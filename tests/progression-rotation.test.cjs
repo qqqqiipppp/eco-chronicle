@@ -42,7 +42,7 @@ c.Save.save();c.quickLoad(c.S.code);assert.deepEqual(json(c.S.cleared),['forest'
 reset();c.S.lv=10;c.S.exp=1300;c.S.themeId='ocean';c.S.gauge=53;c.Save.save();c.quickLoad(c.S.code);
 assert.equal(c.S.themeId,'forest');assert.equal(c.S.progress.ocean.gauge,53);assert.equal(c.S.lv,10);assert.equal(c.S.exp,1300);
 const old=[0,40,100,180,280,400,560,760,1000,1300],needs=[0,48,120,216,336,480,672,912,1200,1560];
-assert.deepEqual(json(c.LEVELS.map(l=>l.need)),needs);
+assert.deepEqual(json(c.LEVELS.slice(0,10).map(l=>l.need)),needs);
 for(let i=1;i<10;i++){
  assert.equal(needs[i],old[i]*1.2);
  for(const delta of [-1,0,1]){reset();c.S.exp=needs[i]+delta;c.addExp(0);assert.equal(c.S.lv,delta<0?i:i+1,`EXP ${c.S.exp}`);}
@@ -50,11 +50,25 @@ for(let i=1;i<10;i++){
 reset();c.S.lv=6;c.S.exp=430;c.addExp(0);assert.equal(c.S.lv,6);assert.equal(c.nextNeed(),672);
 assert.match(c.mStatus(),/다음 레벨까지 242/);assert.match(c.mBag(),/다음 레벨까지 242 EXP/);
 c.addExp(241);assert.equal(c.S.lv,6);c.addExp(1);assert.equal(c.S.lv,7);assert.equal(c.S.exp,672);
-reset();c.S.lv=10;c.S.exp=1300;c.addExp(0);assert.equal(c.S.lv,10);assert.equal(c.nextNeed(),null);
-assert.deepEqual(json(c.LEVELS.map(({need,...stats})=>stats)),[
+reset();c.S.lv=10;c.S.exp=1300;c.addExp(0);assert.equal(c.S.lv,10);assert.equal(c.nextNeed(),1980);
+assert.deepEqual(json(c.LEVELS.slice(0,10).map(({need,...stats})=>stats)),[
  {lv:1,hp:60,atk:13,def:7,sp:25},{lv:2,hp:70,atk:16,def:9,sp:30},{lv:3,hp:80,atk:19,def:11,sp:35},
  {lv:4,hp:90,atk:22,def:13,sp:40},{lv:5,hp:100,atk:25,def:15,sp:45},{lv:6,hp:110,atk:28,def:17,sp:50},
  {lv:7,hp:124,atk:31,def:19,sp:56},{lv:8,hp:138,atk:34,def:21,sp:62},{lv:9,hp:152,atk:37,def:23,sp:68},{lv:10,hp:168,atk:41,def:26,sp:76}]);
+// Real EXP awards can advance an existing Lv10 save through Lv15, but no further.
+assert.equal(c.MAX_LV,15);
+for(let i=10;i<15;i++){
+ reset();c.S.lv=i;c.S.exp=c.LEVELS[i-1].need;
+ const threshold=c.nextNeed();
+ c.addExp(threshold-c.S.exp-1);assert.equal(c.S.lv,i);
+ c.addExp(1);assert.equal(c.S.lv,i+1);assert.equal(c.S.hpCur,c.baseStats().hpMax);
+ assert.equal(c.lvInfo(c.S.lv).lv,i+1);
+}
+assert.equal(c.nextNeed(),null);assert.match(c.mStatus(),/최고 레벨/);
+c.addExp(10000);assert.equal(c.S.lv,15);
+c.Save.save();c.quickLoad(c.S.code);assert.equal(c.S.lv,15);assert.equal(c.S.exp,14260);
+assert.equal(c.baseStats().hpMax,248);assert.equal(c.nextNeed(),null);
+reset();c.addExp(4260);assert.equal(c.S.lv,15,'one large EXP award respects the new cap');
 // Real world/tower selection paths, four complete cycles each, using a reproducible RNG.
 let seed=90321;c.Math.random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
 c.EncounterMiniCycle={pool:'',bag:[],last:null};
@@ -101,4 +115,4 @@ c.miniWin('modalHost','검증');assert.equal(c.S.encounterWon,true);assert.equal
 c.advanceEncounter();assert.equal(c.S.monIdx,3);assert.equal(c.S.gold,gold+m.gold);
 assert.equal(c.PANG_GOAL,28);assert.equal(c.PANG_LIMIT,75000);assert.equal(c.CARE_SECONDS,17);assert.equal(c.CARE_PASS_SCORE,65);
 console.log('World 20:',world.join(' → '));console.log('Tower 20:',tower.join(' → '));
-console.log('PASS: sequential travel/revisits/admin, legacy saves and EXP edges, 40 balanced selections, all 5 launch/result/retry paths in world and tower, unchanged stats and rewards.');
+console.log('PASS: sequential travel/revisits/admin, legacy saves and EXP edges through Lv15, 40 balanced selections, all 5 launch/result/retry paths in world and tower, unchanged Lv1-10 stats and rewards.');

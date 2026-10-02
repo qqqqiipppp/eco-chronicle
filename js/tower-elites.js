@@ -9,7 +9,7 @@ const TOWER_ELITES = Object.freeze([
   {id:'algae', name:'녹조 라떼', floor:18, hp:337, atk:47, exp:60, gold:76,
     meet:'오염된 물에 녹조가 번졌어요. 깨끗한 물이 있어야 물속 생물이 살아요.',
     after:'깨끗한 물을 지켜요.', skills:['탁수 장막','산소 고갈']},
-  {id:'nightglare', name:'인공 백야귀', floor:20, hp:380, atk:52, exp:66, gold:84,
+  {id:'nightglare', name:'LIGHT_BOT_MK2', floor:20, hp:380, atk:52, exp:66, gold:84,
     meet:'밤에도 너무 밝으면 사람과 야생동물이 충분히 쉬기 어려워요.',
     after:'필요하지 않은 조명은 줄이고, 빛이 필요한 곳만 밝혀요.', skills:['눈부신 섬광','밤낮 뒤섞기']},
   {id:'glasswall', name:'착시 유리벽', floor:24, hp:418, atk:50, dr:.13, exp:78, gold:100,
