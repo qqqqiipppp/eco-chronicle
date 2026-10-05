@@ -1338,8 +1338,22 @@ function mNpcEnd(){
    소리 — 악보와 효과음 자료를 그 자리에서 연주한다.
    음악 파일을 담지 않아 용량이 거의 늘지 않고 저작권 문제도 없다.
    ========================================================== */
-var Au = {ctx:null, gain:null, on:true, vol:.55, cur:null, timer:null, at:0, muted:false};
+var Au = {ctx:null, gain:null, on:true, vol:.55, masterVolume:.8, cur:null, timer:null, at:0, muted:false};
 var NOTE_PC = {C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11};
+
+function auApplyVolume(){
+  if(Au.gain) Au.gain.gain.value=Au.muted?0:Au.vol*Au.masterVolume;
+}
+function auRefreshSettings(){
+  if(window.ecoSoundSettings) window.ecoSoundSettings.update();
+}
+function auSetVolume(value){
+  if(!Number.isFinite(value)) return;
+  Au.masterVolume=Math.max(0,Math.min(1,value));
+  auApplyVolume();
+  try{ localStorage.setItem('eco_volume',String(Au.masterVolume)); }catch(e){}
+  auRefreshSettings();
+}
 
 function auInit(){
   if(Au.ctx) return Au.ctx;
@@ -1348,7 +1362,7 @@ function auInit(){
     if(!AC) return null;
     Au.ctx = new AC();
     Au.gain = Au.ctx.createGain();
-    Au.gain.gain.value = Au.muted ? 0 : Au.vol;
+    auApplyVolume();
     Au.gain.connect(Au.ctx.destination);
   }catch(e){ Au.ctx=null; }
   return Au.ctx;
@@ -1517,12 +1531,16 @@ function bgmUpdate(){
 }
 function auToggle(){
   Au.muted=!Au.muted;
-  if(Au.gain) Au.gain.gain.value = Au.muted?0:Au.vol;
+  auApplyVolume();
   try{ localStorage.setItem('eco_mute', Au.muted?'1':'0'); }catch(e){}
-  const b=$('muteBtn'); if(b) b.textContent = Au.muted?'🔇':'🔊';
+  auRefreshSettings();
   if(!Au.muted){ auResume(); Au.cur=null; bgmUpdate(); }
 }
-try{ Au.muted = localStorage.getItem('eco_mute')==='1'; }catch(e){}
+try{
+  Au.muted = localStorage.getItem('eco_mute')==='1';
+  const savedVolume=localStorage.getItem('eco_volume'), value=Number(savedVolume);
+  if(savedVolume!==null && savedVolume.trim()!=='' && Number.isFinite(value) && value>=0 && value<=1) Au.masterVolume=value;
+}catch(e){}
 
 
 /* ==========================================================
@@ -2762,8 +2780,6 @@ function worldHTML(){
         <button class="dbtn r" data-k="r">▶</button>
       </div>
       <button class="actbtn" id="actBtn">상호작용</button>
-      <button class="tinybtn" id="muteBtn" onclick="auToggle()"
-        style="position:absolute;right:10px;top:-40px;z-index:30">🔊</button>
     </div>
   </div>
   <div id="hudHost"></div>
@@ -2937,7 +2953,7 @@ function bindControls(){
     b.addEventListener('pointercancel',off);
   });
   $('actBtn').addEventListener('click',doAction);
-  const mb=$('muteBtn'); if(mb) mb.textContent = Au.muted?'🔇':'🔊';
+  auRefreshSettings();
   if(!window._kb){
     window._kb=true;
     const map={ArrowUp:'u',ArrowDown:'d',ArrowLeft:'l',ArrowRight:'r',w:'u',s:'d',a:'l',d:'r',W:'u',S:'d',A:'l',D:'r'};

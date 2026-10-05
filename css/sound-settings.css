@@ -1,0 +1,9 @@
+/* A small settings area below the HUD; it does not change HUD flow or height. */
+.eco-sound-settings{position:absolute;right:20px;top:60px;z-index:100;display:flex;gap:4px;pointer-events:auto;font-family:'Gowun Dodum',sans-serif}
+.eco-sound-settings>button{min-width:44px;min-height:44px;padding:7px 10px;touch-action:manipulation}
+#ecoSoundMute{font-size:19px;line-height:1}
+.eco-sound-panel{position:absolute;right:0;top:50px;width:230px;max-width:calc(98vw - 40px);padding:12px 14px;border:1px solid #ad9b64;border-radius:9px;background:#173b35;color:#f4e7c5;box-shadow:0 3px 10px #0005}
+.eco-sound-panel[hidden]{display:none}
+.eco-sound-label{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}
+#ecoSoundVolume{display:block;width:100%;min-height:44px;margin:2px 0 0;accent-color:#f2d89f;touch-action:pan-y;cursor:pointer}
+@media(max-height:500px){.eco-sound-settings{top:54px;right:14px}.eco-sound-panel{padding:8px 12px}}
