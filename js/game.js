@@ -4043,11 +4043,12 @@ function mtHTML(){
   </div></div>`;
 }
 function mountMatch(){
+  if(Mt) clearTimeout(Mt.timer);
   S.modal='match';
   const host=$('modalHost'); if(!host) return;
   host.innerHTML=mtHTML();
   const ease=Math.min(3,S.defeatStreak);
-  Mt={g:[], sel:null, need:30-ease*4, done:0, moves:30+ease*6, over:false, busy:false};
+  Mt={g:[], sel:null, need:30-ease*4, done:0, moves:30+ease*6, over:false, busy:false, timer:null, inputVersion:0};
   mtFill();
   $('mtNeed').textContent=Mt.need;
   mtPaint();
@@ -4074,20 +4075,34 @@ function mtFindMatch(g=Mt.g){
   }
   return [...hit];
 }
-/* Each adjacent pair is tried once; restore the board before returning. */
-function mtHasValidMove(g=Mt.g){
+function mtIsAdjacent(a,b){
+  if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||b<0||a>=MT_N*MT_N||b>=MT_N*MT_N) return false;
+  return Math.abs(Math.floor(a/MT_N)-Math.floor(b/MT_N))+Math.abs(a%MT_N-b%MT_N)===1;
+}
+function mtSwapTiles(a,b,g=Mt.g){
+  if(!mtIsAdjacent(a,b)||g[a]<0||g[b]<0) return false;
+  [g[a],g[b]]=[g[b],g[a]];
+  return true;
+}
+/* The detector and real input share the same endpoint match rule and swap. */
+function mtSwapMatches(a,b,g=Mt.g){
+  if(g[a]===g[b]||!mtSwapTiles(a,b,g)) return [];
+  try{
+    const hit=mtFindMatch(g);
+    return hit.includes(a)||hit.includes(b)?hit:[];
+  }finally{ mtSwapTiles(a,b,g); }
+}
+function mtGetValidMoves(g=Mt.g){
+  const moves=[];
   for(let r=0;r<MT_N;r++) for(let c=0;c<MT_N;c++){
     const a=r*MT_N+c;
     for(const b of [c+1<MT_N?a+1:-1,r+1<MT_N?a+MT_N:-1]){
-      if(b<0 || g[a]<0 || g[b]<0 || g[a]===g[b]) continue;
-      [g[a],g[b]]=[g[b],g[a]];
-      const valid=mtFindMatch(g).some(i=>i===a || i===b);
-      [g[a],g[b]]=[g[b],g[a]];
-      if(valid) return true;
+      if(b>=0 && mtSwapMatches(a,b,g).length) moves.push([a,b]);
     }
   }
-  return false;
+  return moves;
 }
+function mtHasValidMove(g=Mt.g){ return mtGetValidMoves(g).length>0; }
 function mtCreatePlayableBoard(){
   for(let attempt=0;attempt<40;attempt++){
     const g=Array.from({length:MT_N*MT_N},()=>Math.floor(Math.random()*MT_ICONS.length));
@@ -4111,6 +4126,7 @@ function mtCreatePlayableBoard(){
   return g;
 }
 function mtShuffle(){
+  Mt.inputVersion=(Mt.inputVersion||0)+1;
   const original=Mt.g.slice();
   for(let attempt=0;attempt<40;attempt++){
     const g=original.slice();
@@ -4124,40 +4140,66 @@ function mtShuffle(){
 }
 function mtPaint(){
   const g=$('mtGrid'); if(!g) return;
-  g.innerHTML=Mt.g.map((v,i)=>{
-    const on=(Mt.sel===i);
-    return `<button class="btn sec" data-i="${i}" style="padding:0;aspect-ratio:1;font-size:22px;
-      display:flex;align-items:center;justify-content:center;
-      ${on?'outline:3px solid var(--gold);transform:scale(.92)':''}
-      ${v<0?'opacity:0':''}">${v<0?'':MT_ICONS[v]}</button>`;
-  }).join('');
-  g.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>mtTap(+b.dataset.i)));
+  // Keep hit targets alive: a second finger may already be touching its tile.
+  if(g.children.length!==MT_N*MT_N){
+    g.innerHTML='';
+    const state=Mt;
+    for(let i=0;i<MT_N*MT_N;i++){
+      const b=document.createElement('button');
+      b.type='button';b.className='btn sec mt-tile';b.dataset.i=String(i);
+      b.style.cssText='padding:0;aspect-ratio:1;font-size:22px;display:flex;align-items:center;justify-content:center';
+      b.addEventListener('pointerdown',()=>{b.mtGesture={version:state.inputVersion,ready:mtActive(state)&&!state.busy};});
+      b.addEventListener('pointercancel',()=>{b.mtGesture=null;});
+      b.addEventListener('click',e=>{
+        const gesture=b.mtGesture;b.mtGesture=null;
+        if(gesture&&(!gesture.ready||gesture.version!==state.inputVersion))return;
+        if((e.detail>0||e.pointerType)&&!gesture)return;
+        if(mtActive(state)&&b.parentElement===g)mtTap(i);
+      });
+      g.appendChild(b);
+    }
+  }
+  Array.from(g.children).forEach((b,i)=>{
+    const v=Mt.g[i];
+    b.textContent=v<0?'':MT_ICONS[v];b.dataset.type=String(v);
+    b.dataset.row=String(Math.floor(i/MT_N));b.dataset.col=String(i%MT_N);
+    b.style.outline=Mt.sel===i?'3px solid var(--gold)':'';
+    b.style.opacity=v<0?'0':'';
+    if(b.mtGesture&&(!b.mtGesture.ready||b.mtGesture.version!==Mt.inputVersion))b.mtGesture=null;
+    b.disabled=Mt.busy||Mt.over||v<0;
+    b.setAttribute('aria-pressed',String(Mt.sel===i));
+  });
+  g.setAttribute('aria-busy',String(Mt.busy));
   const d=$('mtDone'), mv=$('mtMove'), bar=$('mtBar');
   if(d) d.textContent=Mt.done;
   if(mv) mv.textContent=Mt.moves;
   if(bar) bar.style.width=Math.min(100,Math.round(Mt.done/Mt.need*100))+'%';
 }
 function mtTap(i){
-  if(!Mt||Mt.over||Mt.busy) return;
+  if(!mtActive(Mt)||Mt.busy||!Number.isInteger(i)||i<0||i>=MT_N*MT_N||Mt.g[i]<0) return;
   const msg=$('mtMsg'); if(msg) msg.textContent='붙어 있는 둘을 차례로 눌러 자리를 바꿔요';
   if(Mt.sel===null){ Mt.sel=i; mtPaint(); return; }
   if(Mt.sel===i){ Mt.sel=null; mtPaint(); return; }
-  const r1=Math.floor(Mt.sel/MT_N), c1=Mt.sel%MT_N, r2=Math.floor(i/MT_N), c2=i%MT_N;
-  if(Math.abs(r1-r2)+Math.abs(c1-c2)!==1){ Mt.sel=i; mtPaint(); return; }
-  const a=Mt.g[Mt.sel], b=Mt.g[i];
-  Mt.g[Mt.sel]=b; Mt.g[i]=a;
-  if(!mtFindMatch().length){                  // 안 맞으면 되돌린다
-    Mt.g[Mt.sel]=a; Mt.g[i]=b;
+  if(!mtIsAdjacent(Mt.sel,i)){ Mt.sel=i; mtPaint(); return; }
+  if(!mtSwapMatches(Mt.sel,i).length){        // 안 맞으면 보드를 그대로 둔다
     Mt.sel=null; mtPaint();
     const msg=$('mtMsg'); if(msg) msg.textContent='그렇게는 치울 수 없어요';
     return;
   }
+  mtSwapTiles(Mt.sel,i);
+  Mt.inputVersion=(Mt.inputVersion||0)+1;
   Mt.sel=null; Mt.moves--;
   Mt.busy=true; mtPaint();
-  setTimeout(mtResolve,140);
+  const state=Mt;
+  mtSchedule(state,()=>mtResolve(state),140);
+}
+function mtActive(state){ return !!state&&Mt===state&&!state.over&&S.modal==='match'&&!!$('mtGrid'); }
+function mtSchedule(state,fn,delay){
+  state.timer=setTimeout(()=>{state.timer=null;if(mtActive(state))fn();},delay);
 }
 /* 지우고 → 떨어뜨리고 → 또 맞으면 반복 */
-function mtResolve(){
+function mtResolve(state=Mt){
+  if(!mtActive(state)) return;
   const hit=mtFindMatch();
   if(!hit.length){
     Mt.busy=false;
@@ -4174,7 +4216,7 @@ function mtResolve(){
   Mt.done+=hit.length;
   playSfx('hit');
   mtPaint();
-  setTimeout(()=>{
+  mtSchedule(state,()=>{
     for(let c=0;c<MT_N;c++){
       let write=MT_N-1;
       for(let r=MT_N-1;r>=0;r--){
@@ -4184,17 +4226,19 @@ function mtResolve(){
       for(let r=write;r>=0;r--) mtSet(r,c,Math.floor(Math.random()*MT_ICONS.length));
     }
     mtPaint();
-    setTimeout(mtResolve,150);
+    mtSchedule(state,()=>mtResolve(state),150);
   },180);
 }
 function mtWin(){
   if(Mt.over) return;
   Mt.over=true;
+  mtPaint();
   miniWin('mtResult',`치운 쓰레기 <b>${Mt.done}개</b> · 남은 손길 <b>${Mt.moves}</b>`);
 }
 function mtLose(){
   if(Mt.over) return;
   Mt.over=true;
+  mtPaint();
   miniLose('mtResult','쓰레기를 다 치우지 못했어요.','retryMatch()');
 }
 function retryMatch(){ const h=$('mtResult'); if(h) h.innerHTML=''; mountMatch(); }

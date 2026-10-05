@@ -9,8 +9,21 @@
       ? value.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, limit) : '';
   }
 
+  // The saved best floor and its elapsed seconds are one record, not two rankings.
+  function towerRecord(floor, seconds) {
+    return Number.isSafeInteger(floor) && floor > 0 && Number.isSafeInteger(seconds) && seconds >= 0
+      ? { towerBestFloor: floor, towerBestTime: seconds } : { towerBestFloor: 0, towerBestTime: 0 };
+  }
+
+  function towerText(record) {
+    if (!record.towerBestFloor) return '기록 없음';
+    var seconds = record.towerBestTime;
+    return record.towerBestFloor + '층 · ' + String(Math.floor(seconds / 60)).padStart(2, '0') +
+      ':' + String(seconds % 60).padStart(2, '0');
+  }
+
   function summary(state) {
-    if (!state) return { spirit: '없음', level: 1, equipment: '없음', progress: '정보 없음' };
+    if (!state) return Object.assign({ spirit: '없음', level: 1, equipment: '없음', progress: '정보 없음' }, towerRecord());
     var pet = window.PETS && window.PETS[state.petKey];
     var spirit = pet && typeof window.petName === 'function' ? window.petName() : '없음';
     var equipment = '없음';
@@ -30,16 +43,17 @@
         progress = theme.name + ' ' + (theme.monsters[index].boss ? '보스' : (index + 1) + '단계');
       } else progress = theme.name;
     }
-    return { spirit: clean(spirit, 24) || '없음',
+    return Object.assign({ spirit: clean(spirit, 24) || '없음',
       level: Number.isSafeInteger(state.lv) && state.lv > 0 ? state.lv : 1,
-      equipment: clean(equipment, 32) || '없음', progress: clean(progress, 32) || '정보 없음' };
+      equipment: clean(equipment, 32) || '없음', progress: clean(progress, 32) || '정보 없음' },
+      towerRecord(state.tower && state.tower.best, state.tower && state.tower.bestTime));
   }
 
   function sanitize(value) {
     var result = {};
     fields.forEach(function (key) { result[key] = clean(value && value[key], key === 'equipment' ? 32 : 24) || (key === 'progress' ? '정보 없음' : '없음'); });
     result.level = value && Number.isSafeInteger(value.level) && value.level > 0 && value.level < 1000 ? value.level : 1;
-    return result;
+    return Object.assign(result, towerRecord(value && value.towerBestFloor, value && value.towerBestTime));
   }
 
   function update(id, theme, players) {
@@ -59,6 +73,7 @@
     td.title = value;
     td.textContent = value;
     row.appendChild(td);
+    return td;
   }
 
   function render() {
@@ -85,7 +100,13 @@
     current.forEach(function (p) {
       var row = document.createElement('tr');
       if (p.playerId === selfId) row.className = 'eco-online-me';
-      cell(row, '닉네임', p.nickname + (p.playerId === selfId ? ' (나)' : ''));
+      var name = cell(row, '닉네임', p.nickname + (p.playerId === selfId ? ' (나)' : ''));
+      var tower = document.createElement('small');
+      tower.className = 'eco-online-tower';
+      tower.textContent = '🏰 탑 ' + towerText(p);
+      tower.title = '🏰 몬스터의 탑 ' + towerText(p);
+      tower.setAttribute('aria-label', tower.title);
+      name.appendChild(tower);
       cell(row, '정령', p.spirit);
       cell(row, '레벨', 'Lv. ' + p.level);
       cell(row, '장비', p.equipment);
