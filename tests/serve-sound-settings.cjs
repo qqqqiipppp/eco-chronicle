@@ -82,7 +82,7 @@ http.createServer(async (req, res) => {
     if (rel === '/index.html') {
       // Only local response HTML: omit network integrations to isolate audio behavior.
       let html = data.toString().replace(/<script defer[^>]*><\/script>/g, '');
-      data = Buffer.from(html.replace('<script src="./js/game.js">', '<script>(' + fixture.toString() + ')();</script><script src="./js/game.js">'));
+      data = Buffer.from(html.replace(/<script src="\.\/js\/game\.js(?:\?[^\"]*)?">/, tag=>'<script>(' + fixture.toString() + ')();</script>'+tag));
     }
     res.writeHead(200, { 'Cache-Control': 'no-store', 'Content-Type': {
       '.html': 'text/html;charset=utf-8', '.js': 'application/javascript;charset=utf-8', '.css': 'text/css',

@@ -1025,9 +1025,9 @@ button.opt{width:100%;text-align:left;font:inherit;font-size:15px;line-height:1.
 
 /* Keep the craft station's existing three-frame animation while matching each world. */
 #worldRoot #wart-craft .pxa{image-rendering:auto}
-#worldRoot[data-theme="forest"] #wart-craft .pxa{background-image:url('../assets/images/objects/campfire-forest.png')!important}
-#worldRoot[data-theme="river"] #wart-craft .pxa{background-image:url('../assets/images/objects/campfire-river.png')!important}
-#worldRoot[data-theme="ocean"] #wart-craft .pxa{background-image:url('../assets/images/objects/campfire-ocean.png')!important}
-#worldRoot[data-theme="city"] #wart-craft .pxa{background-image:url('../assets/images/objects/campfire-city.png')!important}
-#worldRoot[data-theme="air"] #wart-craft .pxa{background-image:url('../assets/images/objects/campfire-air.png')!important}
-#worldRoot[data-theme="climate"] #wart-craft .pxa{background-image:url('../assets/images/objects/campfire-climate.png')!important}
+#worldRoot[data-theme="forest"] #wart-craft .pxa{background-image:url('../assets/images/objects/campfire-forest.png?v=2026.10.07.4')!important}
+#worldRoot[data-theme="river"] #wart-craft .pxa{background-image:url('../assets/images/objects/campfire-river.png?v=2026.10.07.4')!important}
+#worldRoot[data-theme="ocean"] #wart-craft .pxa{background-image:url('../assets/images/objects/campfire-ocean.png?v=2026.10.07.4')!important}
+#worldRoot[data-theme="city"] #wart-craft .pxa{background-image:url('../assets/images/objects/campfire-city.png?v=2026.10.07.4')!important}
+#worldRoot[data-theme="air"] #wart-craft .pxa{background-image:url('../assets/images/objects/campfire-air.png?v=2026.10.07.4')!important}
+#worldRoot[data-theme="climate"] #wart-craft .pxa{background-image:url('../assets/images/objects/campfire-climate.png?v=2026.10.07.4')!important}

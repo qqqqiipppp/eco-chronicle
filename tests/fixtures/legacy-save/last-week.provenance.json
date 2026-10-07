@@ -1,0 +1,7 @@
+{
+  "commit": "b2714954043b2d62273419d3c02ea017d51bf6bd",
+  "date": "2026-10-02",
+  "source": "js/game.js newState()",
+  "legacyVersion": 8,
+  "note": "Historical initializer executed without edits; realistic student progress and forward-compatible unknown IDs added for preservation assertions."
+}

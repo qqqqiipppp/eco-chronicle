@@ -91,7 +91,8 @@ function ecoExplorationInside(id,x,y){
 function ecoExplorationArt(r){
   // These two painted states share a footprint; they never decide collision.
   const path='./assets/images/ecotech/areas/'+r.tech;
-  return `<img class="eco-room-art" src="${path}-${r.open?'open':'locked'}.png" alt="" aria-hidden="true" draggable="false" decoding="async">${r.open?'':`<img hidden src="${path}-open.png" alt="" aria-hidden="true" decoding="async">`}`;
+  const artUrl=src=>typeof ecoAssetUrl==='function'?ecoAssetUrl(src):src;
+  return `<img class="eco-room-art" src="${artUrl(path+'-'+(r.open?'open':'locked')+'.png')}" alt="" aria-hidden="true" draggable="false" decoding="async">${r.open?'':`<img hidden src="${artUrl(path+'-open.png')}" alt="" aria-hidden="true" decoding="async">`}`;
 }
 function ecoExplorationHTML(){
   return (EcoTech.rooms||[]).map(r=>{

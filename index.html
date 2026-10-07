@@ -4,45 +4,53 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
 <title>환경 원정대</title>
-<link rel="stylesheet" href="./css/style.css?v=forest-npc-wrap-all">
-<link rel="stylesheet" href="./css/animal-care.css">
-<link rel="stylesheet" href="./css/online-players.css">
-<link rel="stylesheet" href="./css/sound-settings.css">
-<link rel="stylesheet" href="./css/ecotech.css">
-<link rel="stylesheet" href="./css/ecotech-world-art.css">
+<link rel="stylesheet" href="./css/style.css?v=2026.10.07.4">
+<link rel="stylesheet" href="./css/animal-care.css?v=2026.10.07.4">
+<link rel="stylesheet" href="./css/online-players.css?v=2026.10.07.4">
+<link rel="stylesheet" href="./css/sound-settings.css?v=2026.10.07.4">
+<link rel="stylesheet" href="./css/ecotech.css?v=2026.10.07.4">
+<link rel="stylesheet" href="./css/ecotech-world-art.css?v=2026.10.07.4">
 </head>
 <body>
 <div class="device"><div id="screen" class="screen"><div id="bootPanel" style="padding:48px 24px;text-align:center;color:#f4e5ba;font-family:sans-serif"><h1>환경 원정대</h1><p id="bootStatus" role="status">게임을 준비하고 있어요…</p><p id="bootHelp" hidden>화면이 계속 멈추면 선생님께 알려 주세요.</p><noscript>게임을 시작하려면 브라우저에서 자바스크립트를 켜 주세요.</noscript></div></div></div>
 
-<script src="./js/boot.js"></script>
-<script src="./js/sprites.js"></script>
-<script src="./js/sprite-meta.js"></script>
-<script src="./js/player-tint.js"></script>
-<script src="./js/visuals.js"></script>
-<script src="./js/audio-data.js"></script>
-<script src="./js/gear-data.js"></script>
-<script src="./js/equipment-ui.js"></script>
-<script src="./js/ecotech-exploration.js"></script>
-<script src="./js/ecotech.js"></script>
-<script src="./js/npc-data.js"></script>
-<script src="./js/map-utils.js"></script>
-<script src="./js/theme-data.js"></script>
-<script src="./js/learning-data.js"></script>
-<script src="./js/learning-ui.js"></script>
-<script src="./js/learning-diagrams.js"></script>
-<script src="./js/battle-view.js"></script>
-<script src="./js/encounters.js"></script>
-<script src="./js/minigame.js"></script>
-<script src="./js/tower-elites.js"></script>
-<script src="./js/animal-care.js"></script>
-<script src="./js/game.js"></script>
-<script src="./js/sound-settings.js"></script>
-<script src="./js/plogging.js"></script>
+<script src="./js/boot.js?v=2026.10.07.4"></script>
+<script src="./js/build-version.js?v=2026.10.07.4"></script>
+<script src="./js/sprites.js?v=2026.10.07.4"></script>
+<script src="./js/sprite-meta.js?v=2026.10.07.4"></script>
+<script src="./js/player-tint.js?v=2026.10.07.4"></script>
+<script src="./js/visuals.js?v=2026.10.07.4"></script>
+<script src="./js/audio-data.js?v=2026.10.07.4"></script>
+<script src="./js/gear-data.js?v=2026.10.07.4"></script>
+<script src="./js/equipment-ui.js?v=2026.10.07.4"></script>
+<script src="./js/ecotech-exploration.js?v=2026.10.07.4"></script>
+<script src="./js/ecotech.js?v=2026.10.07.4"></script>
+<script src="./js/npc-data.js?v=2026.10.07.4"></script>
+<script src="./js/map-utils.js?v=2026.10.07.4"></script>
+<script src="./js/theme-data.js?v=2026.10.07.4"></script>
+<script src="./js/learning-data.js?v=2026.10.07.4"></script>
+<script src="./js/learning-ui.js?v=2026.10.07.4"></script>
+<script src="./js/learning-diagrams.js?v=2026.10.07.4"></script>
+<script src="./js/battle-view.js?v=2026.10.07.4"></script>
+<script src="./js/encounters.js?v=2026.10.07.4"></script>
+<script src="./js/minigame.js?v=2026.10.07.4"></script>
+<script src="./js/tower-elites.js?v=2026.10.07.4"></script>
+<script src="./js/animal-care.js?v=2026.10.07.4"></script>
+<script>
+if(typeof ecoVersionAssets==='function')ecoVersionAssets([
+  SPRITES,ECO_MONSTER_ART,ECO_BOSS_ART,ECO_BATTLE_ART,ECO_ARCADE_ART,ECO_SCENES,
+  ECO_HUMAN,ECO_ART,ECO_NPC,ECO_MON,ECO_WALK,ECO_TOWER_ELITE_ART,CARE_PROP_ART,CARE_STAGES
+]);
+</script>
+<script src="./js/game.js?v=2026.10.07.4"></script>
+<script src="./js/sound-settings.js?v=2026.10.07.4"></script>
+<script src="./js/plogging.js?v=2026.10.07.4"></script>
+<script>if(typeof ecoVersionAssets==='function')ecoVersionAssets([PANG_NPC_ART]);</script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script defer src="./js/supabase.js"></script>
-<script defer src="./js/remote-players.js"></script>
-<script defer src="./js/movement.js"></script>
-<script defer src="./js/player-list.js"></script>
-<script defer src="./js/presence.js"></script>
+<script defer src="./js/supabase.js?v=2026.10.07.4"></script>
+<script defer src="./js/remote-players.js?v=2026.10.07.4"></script>
+<script defer src="./js/movement.js?v=2026.10.07.4"></script>
+<script defer src="./js/player-list.js?v=2026.10.07.4"></script>
+<script defer src="./js/presence.js?v=2026.10.07.4"></script>
 </body>
 </html>
