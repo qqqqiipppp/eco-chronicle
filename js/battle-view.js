@@ -11,6 +11,14 @@ function cinematicBattleLayout(w,h,rank){
 function stopBattleView(){if(BATTLE_VIEW_OBSERVER){BATTLE_VIEW_OBSERVER.disconnect();BATTLE_VIEW_OBSERVER=null;}window.removeEventListener('resize',sizeBattleView);}
 function sizeBattleView(){const scene=$('bscene'),field=$('bfield');if(!scene||!scene.classList.contains('cinematic-battle')||!field)return;const w=field.clientWidth,h=field.clientHeight;if(!w||!h)return;
  const l=cinematicBattleLayout(w,h,scene.dataset.rank),set=(el,x,y,n)=>Object.assign(el.style,{left:x+'px',right:'auto',bottom:y+'px',width:n+'px',height:n+'px'});
- set($('bme'),l.heroX,l.heroY,l.hero);set($('bfoe'),l.foeX,l.foeY,l.foe);scene.style.setProperty('--strike-x',(l.foeX+l.foe/2-l.heroX-l.hero/2)*.14+'px');scene.style.setProperty('--strike-y',-Math.max(12,(l.foeY-l.heroY)*.6)+'px');
+ set($('bme'),l.heroX,l.heroY,l.hero);
+ if(field.querySelector('.tower-elite-art')){
+  // Preserve the old 1.15x visible footprint in the layout box, not a second
+  // transformed texture. Align the final box to physical display pixels.
+  const dpr=window.devicePixelRatio||1,snap=v=>Math.round(v*dpr)/dpr,r=field.getBoundingClientRect();
+  const n=snap(l.foe*1.15),x=l.foeX-l.foe*.075,y=l.foeY-l.foe*.015;
+  set($('bfoe'),snap(r.left+x)-r.left,r.bottom-snap(r.bottom-y),n);
+ }else set($('bfoe'),l.foeX,l.foeY,l.foe);
+ scene.style.setProperty('--strike-x',(l.foeX+l.foe/2-l.heroX-l.hero/2)*.14+'px');scene.style.setProperty('--strike-y',-Math.max(12,(l.foeY-l.heroY)*.6)+'px');
 }
 function startBattleView(){stopBattleView();sizeBattleView();const field=$('bfield');if(!field)return;if(typeof ResizeObserver!=='undefined'){BATTLE_VIEW_OBSERVER=new ResizeObserver(sizeBattleView);BATTLE_VIEW_OBSERVER.observe(field);}window.addEventListener('resize',sizeBattleView);}

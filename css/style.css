@@ -1021,7 +1021,9 @@ button.opt{width:100%;text-align:left;font:inherit;font-size:15px;line-height:1.
 .tower-elite-art[data-pose="2"]{background-position:50% 0}
 .tower-elite-art[data-pose="3"]{background-position:75% 0}
 .tower-elite-art[data-pose="4"]{background-position:100% 0}
-.cinematic-battle .bactor .tower-elite-art{width:100%!important;height:100%!important;transform:scale(1.15)}
+.cinematic-battle .bactor .tower-elite-art{width:100%!important;height:100%!important;transform:none}
+.cinematic-battle .bactor.foe:has(.tower-elite-art) .art{filter:none}
+.cinematic-battle .monster-scale:has(.tower-elite-art){filter:drop-shadow(0 4px 2px #080b1499)}
 
 /* Keep the craft station's existing three-frame animation while matching each world. */
 #worldRoot #wart-craft .pxa{image-rendering:auto}
