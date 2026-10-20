@@ -52,7 +52,7 @@ var ECO_TECH=[
 var EcoTech={points:[],theme:null,active:null,order:[],message:''};
 function ecoTechById(id){return ECO_TECH.find(t=>t.id===id);}
 /* Tool art is presentation only; the quest and saved technology IDs stay intact. */
-function ecoTechIcon(t){return `<img class="eco-tool-icon" src="./assets/images/ecotech/${t.id}.png" width="96" height="96" alt="">`;}
+function ecoTechIcon(t){const src=`./assets/images/ecotech/${t.id}.png`;return `<img class="eco-tool-icon" src="${typeof ecoAssetUrl==='function'?ecoAssetUrl(src):src}" width="96" height="96" alt="">`;}
 function ecoTechNormalize(s){
   const ids=ECO_TECH.map(t=>t.id);
   for(const key of ['ecoTechUnlocked','ecoTechSites','ecoTechFindings'])

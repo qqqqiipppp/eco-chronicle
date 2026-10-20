@@ -1,0 +1,330 @@
+{
+  "v": 8,
+  "scene": "world",
+  "name": "이전학생",
+  "code": "EC7142",
+  "petKey": "water",
+  "themeId": "river",
+  "grade": 6,
+  "hair": "long",
+  "face": "calm",
+  "outfit": "overall",
+  "skin": "tan",
+  "haircol": "black",
+  "petStage": 1,
+  "day": 17,
+  "water": 6,
+  "wellDay": 16,
+  "canLv": 1,
+  "seeds": {
+    "rose": 4,
+    "future_seed": 2
+  },
+  "produce": {
+    "milk": 7,
+    "future_crop": 1
+  },
+  "npcDone": [
+    "forest_npc_1"
+  ],
+  "ecoTechUnlocked": [
+    "soil",
+    "old_technology"
+  ],
+  "ecoTechQuests": {
+    "soil": {
+      "accepted": true,
+      "surveyed": [
+        0,
+        1
+      ],
+      "orderDone": false,
+      "futureQuestNote": "keep"
+    },
+    "old_technology": {
+      "accepted": true,
+      "surveyed": [
+        4
+      ],
+      "progress": 17
+    }
+  },
+  "ecoTechSites": [
+    "soil",
+    "old_technology"
+  ],
+  "ecoTechFindings": [
+    "soil",
+    "old_technology"
+  ],
+  "duelWon": [
+    "npc_duel"
+  ],
+  "shadowWon": true,
+  "farm": {
+    "plots": [
+      {
+        "seed": "rose",
+        "stage": 2,
+        "wet": true,
+        "legacyPlot": "keep"
+      },
+      {
+        "seed": null,
+        "stage": 0,
+        "wet": false
+      },
+      {
+        "seed": null,
+        "stage": 0,
+        "wet": false
+      },
+      {
+        "seed": null,
+        "stage": 0,
+        "wet": false
+      },
+      {
+        "seed": null,
+        "stage": 0,
+        "wet": false
+      },
+      {
+        "seed": null,
+        "stage": 0,
+        "wet": false
+      },
+      {
+        "seed": null,
+        "stage": 0,
+        "wet": false
+      },
+      {
+        "seed": null,
+        "stage": 0,
+        "wet": false
+      },
+      {
+        "seed": null,
+        "stage": 0,
+        "wet": false
+      },
+      {
+        "seed": null,
+        "stage": 0,
+        "wet": false
+      },
+      {
+        "seed": null,
+        "stage": 0,
+        "wet": false
+      },
+      {
+        "seed": null,
+        "stage": 0,
+        "wet": false
+      }
+    ],
+    "pens": [
+      {
+        "kind": "cow",
+        "age": 9,
+        "adult": true,
+        "fed": true,
+        "tick": 2,
+        "legacyAnimal": 1
+      },
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "futureFarm": {
+      "flag": true
+    }
+  },
+  "tower": {
+    "best": 18,
+    "bestTime": 462,
+    "runs": 6,
+    "history": [
+      {
+        "floor": 18,
+        "time": 462,
+        "legacy": true
+      }
+    ],
+    "futureTower": "retain"
+  },
+  "lv": 9,
+  "exp": 1423,
+  "gold": 845,
+  "gauge": 72,
+  "hpCur": 103,
+  "spCur": 32,
+  "lessonDone": true,
+  "quizDone": false,
+  "advDone": false,
+  "quizIdx": 2,
+  "quizPicked": null,
+  "quizHint": false,
+  "quizCorrect": 0,
+  "quizScored": [
+    0,
+    1
+  ],
+  "quizWrong": [
+    3
+  ],
+  "retryQueue": null,
+  "advIdx": 1,
+  "advPicked": null,
+  "advScored": [
+    0
+  ],
+  "quizContentVersion": 39,
+  "monIdx": 3,
+  "battleDone": false,
+  "interludePending": null,
+  "encounterWon": false,
+  "defeatStreak": 0,
+  "gboard": {
+    "objs": {
+      "old_node": 2
+    },
+    "met": [
+      "creature_old"
+    ],
+    "futureField": 11
+  },
+  "clues": {
+    "c1": 7
+  },
+  "boxOpen": true,
+  "gatherDone": true,
+  "dexBonus": false,
+  "crafted": {
+    "craft_legacy": 2
+  },
+  "potions": 8,
+  "tickets": 5,
+  "mats": {
+    "mat_legacy": 6,
+    "future_mat": 3
+  },
+  "gear": {
+    "weapon": "L1",
+    "armor": "a2",
+    "helm": "h1",
+    "shoes": "s2",
+    "futureSlot": "remember"
+  },
+  "owned": [
+    "w3",
+    "L1",
+    "a2",
+    "h1",
+    "s2",
+    "retired_gear"
+  ],
+  "dex": [
+    "creature_old"
+  ],
+  "cleared": [
+    "forest"
+  ],
+  "progress": {
+    "forest": {
+      "gauge": 100,
+      "lessonDone": true,
+      "quizDone": true,
+      "quizScored": [
+        0,
+        1,
+        2
+      ],
+      "quizWrong": [],
+      "quizIdx": 3,
+      "advDone": true,
+      "advScored": [
+        0
+      ],
+      "monIdx": 5,
+      "battleDone": true,
+      "clues": {
+        "c1": 7,
+        "c2": 8,
+        "c3": 9
+      },
+      "crafted": {
+        "old_tool": 1
+      },
+      "mats": {
+        "old_mat": 4
+      },
+      "dex": [
+        "old_creature"
+      ],
+      "npcDone": [
+        "forest_npc_1"
+      ],
+      "futureProgress": {
+        "amount": 41
+      }
+    },
+    "river": {
+      "gauge": 72,
+      "monIdx": 3,
+      "mats": {
+        "mat_legacy": 6
+      },
+      "quizScored": [
+        0,
+        1
+      ],
+      "quizWrong": [
+        3
+      ]
+    },
+    "future_region": {
+      "gauge": 88,
+      "futureMap": true
+    }
+  },
+  "modal": null,
+  "learning": {
+    "version": 1,
+    "regions": {
+      "forest": {
+        "answers": {
+          "forest-1": true
+        },
+        "cases": {
+          "forest-1": 1
+        },
+        "notes": {
+          "forest-1": "학습 메모"
+        },
+        "page": 2,
+        "futureNote": "keep"
+      },
+      "futureSubject": {
+        "studied": true
+      }
+    }
+  },
+  "arcadeRecords": {
+    "runner_forest": 15,
+    "sky_forest": 320,
+    "unknownMini": 27
+  },
+  "futureStudentField": {
+    "message": "do not delete",
+    "deep": [
+      {
+        "earned": 3
+      }
+    ]
+  }
+}

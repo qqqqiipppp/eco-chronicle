@@ -177,12 +177,13 @@ function useTheme(id){ CUR = THEMES[id] || THEMES.forest; }
 /* ==========================================================
    3) 상태
    ========================================================== */
-var SAVE_VERSION = 8;
+var SAVE_VERSION = 9;
+var CURRENT_SAVE_VERSION = SAVE_VERSION; // Storage schema; independent of BUILD_VERSION.
 var S = null;
 
 function newState(){
   return {
-    v:SAVE_VERSION,
+    v:SAVE_VERSION, saveVersion:CURRENT_SAVE_VERSION,
     scene:'title',
     name:"", code:"",
     petKey:null,
@@ -373,11 +374,16 @@ var Save = {
   P:'echo:',
   IDX:'echo:__index',
   ok(){
-    try{ localStorage.setItem('echo:__t','1'); localStorage.removeItem('echo:__t'); return true; }
+    try{
+      const key='eco:__storage_probe',before=localStorage.getItem(key);
+      localStorage.setItem(key,'1');
+      if(before===null)localStorage.removeItem(key);else localStorage.setItem(key,before);
+      return true;
+    }
     catch(e){ return false; }
   },
   index(){
-    try{ return JSON.parse(localStorage.getItem(this.IDX)||'[]'); }catch(e){ return []; }
+    try{ const i=JSON.parse(localStorage.getItem(this.IDX)||'[]'); return Array.isArray(i)?i:[]; }catch(e){ return []; }
   },
   _pushIndex(code){
     const i=this.index();
@@ -385,31 +391,33 @@ var Save = {
   },
   save(){
     if(!S || !S.code) return 'none';
+    S.v=SAVE_VERSION; S.saveVersion=CURRENT_SAVE_VERSION;
     const json=JSON.stringify(S);
-    if(this.ok()){
-      try{
-        localStorage.setItem(this.P+S.code, json);
-        localStorage.setItem('echo:__last', S.code);
-        this._pushIndex(S.code);
-        return 'disk';
-      }catch(e){ /* 용량 초과 등 → 메모리로 폴백 */ }
-    }
+    try{
+      localStorage.setItem(this.P+S.code, json);
+      try{ localStorage.setItem('echo:__last', S.code); }catch(e){}
+      this._pushIndex(S.code);
+      return 'disk';
+    }catch(e){ /* 용량 초과 등 → 원본 슬롯은 그대로, 메모리로 폴백 */ }
     this.mem=this.mem||{}; this.mem[S.code]=json;
     return 'mem';
   },
   load(code){
     code=String(code||'').trim().toUpperCase();
+    this.lastError=null;
     let json=null;
-    if(this.ok()){ try{ json=localStorage.getItem(this.P+code); }catch(e){} }
+    // A full/read-only store can still contain valid student saves.
+    try{ json=localStorage.getItem(this.P+code); }catch(e){}
     if(!json && this.mem && this.mem[code]) json=this.mem[code];
     if(!json) return null;
     try{
-      const o=JSON.parse(json);
-      return migrate(o);
-    }catch(e){ return null; }
+      const o=migrate(JSON.parse(json));
+      if(!o.code)o.code=code;
+      if(o.code.toUpperCase()!==code)throw new Error('Save code does not match its slot');
+      return o;
+    }catch(e){ this.lastError=e; console.error('[Save] load/migration failed:',code,e); return null; }
   },
   last(){
-    if(!this.ok()) return null;
     try{ return localStorage.getItem('echo:__last'); }catch(e){ return null; }
   },
   wipeAll(){
@@ -420,51 +428,104 @@ var Save = {
   }
 };
 
-/* 예전 저장본을 최신 형태로 맞춰준다 (필드가 늘어나도 안 깨지게) */
-function migrate(o){
-  normalizeQuizProgress(o,THEMES[o.themeId]||THEMES.forest);
-  if(o.progress)Object.keys(o.progress).forEach(id=>{if(THEMES[id]&&o.progress[id])normalizeQuizProgress(o.progress[id],THEMES[id]);});
-  if(o && o.spCur==null) o.spCur = 25;
-  // 예전 저장(성별)을 새 겉모습으로 옮긴다
-  if(o && o.sex && !o.hair) o.hair = (o.sex==='f') ? 'long' : 'messy';
-  const base=newState();
-  for(const k in base) if(!(k in o)) o[k]=base[k];
-  if(!o.mats) o.mats={};
-  if(!Array.isArray(o.quizScored)) o.quizScored=[];
-  if(!Array.isArray(o.quizWrong))  o.quizWrong=[];
-  if(!Array.isArray(o.cleared))    o.cleared=[];
-  if(!o.clues) o.clues={};
-  if(!o.grade) o.grade=5;
-  if(!o.hair) o.hair='messy';
-  if(!o.outfit) o.outfit='cloak';
-  if(!o.skin) o.skin='light';
-  if(!o.haircol) o.haircol='brown';
-  if(!['bright','calm','smile','bold'].includes(o.face)) o.face='bright';
-  delete o.sex;
-  if(typeof o.petStage!=='number') o.petStage=0;
-  if(typeof o.day!=='number') o.day=1;
-  if(!o.seeds) o.seeds={};
-  if(!o.produce) o.produce={};
-  if(typeof o.canLv!=='number') o.canLv=0;
-  if(typeof o.water!=='number') o.water=canCap();
-  if(typeof o.wellDay!=='number') o.wellDay=0;
-  if(!Array.isArray(o.npcDone)) o.npcDone=[];
-  if(!Array.isArray(o.duelWon)) o.duelWon=[];
-  if(typeof o.shadowWon!=='boolean') o.shadowWon=false;
-  if(!o.gear) o.gear={};
-  ['weapon','armor','helm','shoes'].forEach(k=>{ if(o.gear[k]===undefined) o.gear[k]=null; });
-  // 예전 저장의 장비 번호가 새 목록에 없으면 벗긴다
-  ['weapon','armor','helm','shoes'].forEach(k=>{
-    if(o.gear[k] && !gearFind(k,o.gear[k])) o.gear[k]=null;
+/* Only student state is merged. Rules, monsters and minigame runtimes stay in code. */
+function saveRecord(o){ return !!o && typeof o==='object' && !Array.isArray(o); }
+function saveClone(o){ return JSON.parse(JSON.stringify(o)); }
+function saveDefaults(o,base,path){
+  if(!saveRecord(o))throw new Error('Invalid saved object: '+path);
+  Object.keys(base).forEach(k=>{
+    const value=base[k],at=path+'.'+k;
+    if(!Object.prototype.hasOwnProperty.call(o,k) || (o[k]==null && value!==null)){
+      o[k]=saveClone(value); return;
+    }
+    if(value===null)return;
+    if(Array.isArray(value)){
+      if(!Array.isArray(o[k]))throw new Error('Invalid saved list: '+at);
+    }else if(saveRecord(value)){
+      // Historical administrator saves used [] as an empty crafted dictionary.
+      if(k==='crafted' && Array.isArray(o[k]))o[k]=Object.assign({},o[k]);
+      saveDefaults(o[k],value,at);
+    }else if(typeof value==='boolean'){
+      if(o[k]===0 || o[k]===1)o[k]=!!o[k];
+      if(typeof o[k]!=='boolean')throw new Error('Invalid saved flag: '+at);
+    }else if(typeof o[k]!==typeof value || (typeof value==='number' && !Number.isFinite(o[k]))){
+      throw new Error('Invalid saved value: '+at);
+    }
   });
-  if(Array.isArray(o.owned)) o.owned=o.owned.filter(id=>
-    Object.keys(GEAR_ALL).some(k=>gearList(k).some(i=>i.id===id)));
-  ecoTechNormalize(o);
-  if(!o.farm) o.farm=newFarm();
-  if(!o.tower) o.tower={best:0,bestTime:0,runs:0,history:[]};
-  if(!Array.isArray(o.tower.history)) o.tower.history=[];
-  if(!o.progress) o.progress={};
-  o.v=SAVE_VERSION;
+  return o;
+}
+function saveNormalizeStudent(o){
+  if(o.sex && !o.hair)o.hair=o.sex==='f'?'long':'messy';
+  if(o.water==null)o.water=CANS[clamp(Number.isInteger(o.canLv)?o.canLv:0,0,CANS.length-1)].cap;
+  // Infer earned quiz rewards and invalidate old answer selectors BEFORE adding
+  // the current quizContentVersion/advScored defaults.
+  normalizeQuizProgress(o,THEMES[o.themeId]||THEMES.forest);
+  saveDefaults(o,newState(),'save');
+  // Existing appearance fallbacks; the obsolete field itself is retained.
+  ['hair','outfit','skin','haircol'].forEach(k=>{if(!o[k])o[k]=newState()[k];});
+  if(!['bright','calm','smile','bold'].includes(o.face))o.face='bright';
+  if(!THEMES[o.themeId])throw new Error('Unknown saved region');
+  if(o.petKey!==null && !PETS[o.petKey])throw new Error('Unknown saved spirit');
+  if(!Number.isInteger(o.lv)||o.lv<1||o.lv>MAX_LV||o.exp<0)throw new Error('Invalid saved level/EXP');
+  if(o.farm==null)o.farm=newFarm();
+  saveDefaults(o.farm,newFarm(),'save.farm');
+  const farmBase=newFarm();
+  for(let i=0;i<PLOTS;i++){
+    if(o.farm.plots[i]==null)o.farm.plots[i]=farmBase.plots[i];
+    saveDefaults(o.farm.plots[i],farmBase.plots[i],'save.farm.plots.'+i);
+  }
+  for(let i=0;i<PENS;i++){
+    if(o.farm.pens[i]==null)o.farm.pens[i]=null;
+    else saveDefaults(o.farm.pens[i],{kind:null,age:0,adult:false,fed:false,tick:0},'save.farm.pens.'+i);
+  }
+  if(o.learning!=null){
+    saveDefaults(o.learning,{version:1,regions:{}},'save.learning');
+    if(o.learning.version!==1)throw new Error('Unsupported saved learning version');
+    Object.keys(o.learning.regions).forEach(id=>{
+      if(o.learning.regions[id]==null)o.learning.regions[id]={};
+      saveDefaults(o.learning.regions[id],{answers:{},cases:{},notes:{},page:0},'save.learning.regions.'+id);
+    });
+  }
+  if(o.arcadeRecords!=null && !saveRecord(o.arcadeRecords))throw new Error('Invalid saved arcade records');
+  // Preserve unknown tool IDs and extra quest metadata instead of deleting earned data.
+  Object.keys(o.ecoTechQuests).forEach(id=>{
+    if(o.ecoTechQuests[id]==null)o.ecoTechQuests[id]={};
+    saveDefaults(o.ecoTechQuests[id],{accepted:false,surveyed:[],orderDone:false},'save.ecoTechQuests.'+id);
+  });
+  const regionBase={}; THEME_FIELDS.forEach(k=>{regionBase[k]=newState()[k];});
+  const normalizeRegion=(r,t,path)=>{
+    if(!saveRecord(r))throw new Error('Invalid saved region: '+path);
+    normalizeQuizProgress(r,t);
+    saveDefaults(r,regionBase,path);
+    if(r.gboard!=null)saveDefaults(r.gboard,{themeId:t.id,uses:{},tool:'shake',repeat:false},path+'.gboard');
+    normalizeQuizProgress(r,t);
+  };
+  normalizeRegion(o,THEMES[o.themeId],'save');
+  Object.keys(o.progress).forEach(id=>{
+    if(THEMES[id]){
+      if(o.progress[id]==null)o.progress[id]={};
+      normalizeRegion(o.progress[id],THEMES[id],'save.progress.'+id);
+    }
+  });
+  return o;
+}
+// v:8 was reused by all historical releases. Earlier markers need no field rename.
+// Add one entry per schema change; migration runs on a copy, never on stored JSON.
+var SAVE_MIGRATIONS={};
+for(let version=0;version<8;version++)SAVE_MIGRATIONS[version]=o=>o;
+SAVE_MIGRATIONS[8]=saveNormalizeStudent;
+function migrate(saved){
+  if(!saveRecord(saved))throw new Error('Invalid save root');
+  let version=saved.saveVersion==null?(saved.v==null?0:saved.v):saved.saveVersion;
+  if(!Number.isInteger(version)||version<0||version>CURRENT_SAVE_VERSION)throw new Error('Unsupported save version');
+  let o=saveClone(saved);
+  while(version<CURRENT_SAVE_VERSION){
+    const step=SAVE_MIGRATIONS[version];
+    if(!step)throw new Error('Missing save migration: '+version);
+    o=step(o); version++; o.v=version; o.saveVersion=version;
+  }
+  saveNormalizeStudent(o); // Validate current saves and fill optional missing fields too.
+  o.v=SAVE_VERSION; o.saveVersion=CURRENT_SAVE_VERSION;
   return o;
 }
 
@@ -2421,7 +2482,7 @@ var THEME_FIELDS=['gauge','lessonDone','quizDone','advDone','quizIdx','quizPicke
 
 function stashTheme(){
   if(!S.progress) S.progress={};
-  const o={};
+  const o=Object.assign({},S.progress[S.themeId]||{});
   THEME_FIELDS.forEach(k=>{ o[k]=S[k]; });
   S.progress[S.themeId]=o;
 }
@@ -2546,7 +2607,7 @@ function pgTitle(){
   const warn = Save.ok()? '' :
     `<div class="note" style="color:var(--danger)">이 브라우저에서는 저장할 수 없어요. 선생님께 알려 주세요.</div>`;
   return `<div class="page"><div class="inner" style="justify-content:center;flex:1">
-    <div class="title-emblem" aria-hidden="true"><img src="./assets/images/objects/title-nature-emblem.png" alt=""></div>
+    <div class="title-emblem" aria-hidden="true"><img src="${typeof ecoAssetUrl==='function'?ecoAssetUrl('./assets/images/objects/title-nature-emblem.png'):'./assets/images/objects/title-nature-emblem.png'}" alt=""></div>
     <h1 class="title">환경 원정대</h1>
     <div class="sub">6개 지역을 탐험하며 환경 문제를 해결해 보세요.</div>
     <div style="height:6px"></div>
@@ -2571,7 +2632,10 @@ function pgTitle(){
 function startNew(){ S=newState(); applyTheme('forest'); go('name'); }
 function quickLoad(code){
   const raw=Save.load(code);
-  if(!raw){ toast("그 번호를 찾지 못했어요"); return; }
+  if(!raw){ toast(Save.lastError?"저장 데이터를 불러오지 못했어요.":"그 번호를 찾지 못했어요"); return false; }
+  const previous=S;
+  const previousWorld={px:Wd.px,py:Wd.py,petX:Wd.petX,petY:Wd.petY,trail:Wd.trail.slice()};
+  try{
   S=raw; S.modal=null;
   // Older saves may be standing in a region opened by level alone. Keep its
   // progress, level and EXP, and resume in the last sequentially open region.
@@ -2583,11 +2647,34 @@ function quickLoad(code){
     normalizeQuizProgress(S,THEMES[S.themeId]);
   }
   applyTheme(S.themeId||'forest');
-  if(!S.name||!S.petKey){ go('name'); return; }
+  if(!S.name||!S.petKey){
+    go(!S.name?'name':(['look','story','pet','guide'].includes(S.scene)?S.scene:'pet'));
+    Save.save(); return true;
+  }
   S.scene='world'; Wd.ready=false;
   Wd.px=SPAWN.x; Wd.py=SPAWN.y; Wd.trail=[];
   Wd.petX=SPAWN.x-34; Wd.petY=SPAWN.y+6;
   render(); setTimeout(()=>toast(`${NAME()} 님, 다시 오셨군요! 🌿`),300);
+  // Rewrite only after validation and the loaded screen succeed. Failed writes
+  // retain the original disk slot and use the existing in-memory fallback.
+  Save.save();
+  return true;
+  }catch(error){
+    S=previous;
+    try{
+      stopLoop(); releaseKeys();
+      Object.assign(Wd,previousWorld); Wd.ready=false;
+      if(S){
+        applyTheme(S.themeId||'forest');
+        const screen=$('screen'); if(screen)screen.innerHTML='';
+        render();
+      }
+    }catch(recoveryError){ console.error('[Save] previous screen recovery failed:',recoveryError); }
+    Save.lastError=error;
+    console.error('[Save] resume failed:',code,error);
+    toast('저장 데이터를 불러오지 못했어요.');
+    return false;
+  }
 }
 function openLoad(){
   const f=$('codeInput'); if(!f) return;
@@ -2623,7 +2710,7 @@ function submitName(){
   const v=f.value.trim();
   if(!v){ toast("이름을 입력해 주세요"); f.focus(); return; }
   if(v.length>8){ toast("8자 이내로 입력해 주세요"); return; }
-  S.name=v; S.grade=gradePick; S.code=makeCode();
+  S.name=v; S.grade=gradePick; if(!S.code)S.code=makeCode();
   autosave();
   go('look');
 }
@@ -5599,7 +5686,7 @@ function fPaintHud(){
   const info=$('finfo');
   const left=boardLeft();
   if(info){
-    const bag=Object.entries(S.mats).filter(([k,v])=>v>0)
+    const bag=Object.entries(S.mats).filter(([k,v])=>v>0 && CUR.mats[k])
       .map(([k,v])=>`<span class="chip">${CUR.mats[k].ico} ${v}</span>`).join('');
     const cl=CUR.gather.clues.filter(c=>S.clues[c.id]).length;
     info.innerHTML=`<span class="chip">🧺 남은 ${left}곳</span>
@@ -5953,7 +6040,7 @@ function mCraft(){
       <button ${done||!can?'disabled':''} onclick="craft('${r.id}')">${done?'완료':'제작'}</button>
     </div>`;
   }).join('');
-  const bag=Object.entries(S.mats).filter(([k,v])=>v>0)
+  const bag=Object.entries(S.mats).filter(([k,v])=>v>0 && CUR.mats[k])
     .map(([k,v])=>`<span class="chip">${CUR.mats[k].ico} ${CUR.mats[k].name} ${v}</span>`).join('')
     || '<span class="chip dim">재료 없음 — 채집터에서 모아요</span>';
   const n=Object.keys(S.crafted).length;
@@ -5997,7 +6084,7 @@ function mShop(){
           : `<button ${S.gold<gearShopPrice(it)?'disabled':''} onclick="buyGear('${slot}','${it.id}')">${gearShopPrice(it)}G</button>`}
       </div>`;
     }).join('')).join('');
-  const sellRows=Object.entries(S.mats).filter(([k,v])=>v>0).map(([k,v])=>
+  const sellRows=Object.entries(S.mats).filter(([k,v])=>v>0 && CUR.mats[k]).map(([k,v])=>
     `<div class="itemrow"><div class="ico">${CUR.mats[k].ico}</div>
       <div class="tx"><b>${CUR.mats[k].name}</b><small>보유 ${v}개 · 개당 ${CUR.mats[k].price}G</small></div>
       <button onclick="sellMat('${k}')">1개 팔기</button></div>`).join('')
@@ -6042,7 +6129,7 @@ function equip(slot,id){
   toast("장착했어요"); drawModal(); paintHud(); autosave();
 }
 function sellMat(k){
-  if(matCount(k)<=0) return;
+  if(matCount(k)<=0 || !CUR.mats[k]) return;
   S.mats[k]--; S.gold+=CUR.mats[k].price;
   toast(`${CUR.mats[k].name} 판매 · 골드 +${CUR.mats[k].price}`);
   drawModal(); paintHud();
@@ -6202,7 +6289,7 @@ function mBag(){
         ${it?'':'opacity:.45'}">${it?gearIco(it,22):''}
       <span>${it?it.name:GEAR_LABEL[slot]+' 없음'}</span></div>`;
   }).join('');
-  const bag=Object.entries(S.mats).filter(([k,v])=>v>0)
+  const bag=Object.entries(S.mats).filter(([k,v])=>v>0 && CUR.mats[k])
     .map(([k,v])=>`<span class="chip">${CUR.mats[k].ico} ${CUR.mats[k].name} ${v}</span>`).join('') || '<span class="chip dim">재료 없음</span>';
   const skills=activeSkills().map(s=>
     `<span class="chip ${S.lv>=s.lv?'':'dim'}" ${s.pet?'style="border-color:var(--gold);color:var(--gold)"':''}>${S.lv>=s.lv?'':'🔒 '}${s.name}</span>`).join('');

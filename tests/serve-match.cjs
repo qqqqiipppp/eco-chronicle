@@ -175,7 +175,10 @@ http.createServer(async(req,res)=>{try{
   if(baseline&&(rel==='/js/game.js'||rel==='/css/style.css'))data=execFileSync('git',['show','HEAD:'+rel.slice(1)],{cwd:root,maxBuffer:8*1024*1024});else data=await fs.readFile(full);
   if(rel==='/index.html'){
     let html=data.toString().replace(/<script defer[^>]*><\/script>/g,'');
-    if(baseline)html=html.replace('./js/game.js','./js/game.js?baseline=1').replace('./css/style.css?','./css/style.css?baseline=1&');
+    if(baseline)html=html.replace(/\.\/(?:js\/game\.js|css\/style\.css)(?:\?[^\"]*)?/g,source=>{
+      const assetUrl=new URL(source,'http://localhost/');assetUrl.searchParams.set('baseline','1');
+      return '.'+assetUrl.pathname+'?'+assetUrl.searchParams.toString();
+    });
     data=Buffer.from(html.replace('</body>','<script>('+fixture.toString()+')();</script></body>'));
   }
   res.writeHead(200,{'Cache-Control':'no-store','Content-Type':{'.html':'text/html;charset=utf-8','.js':'application/javascript;charset=utf-8','.css':'text/css','.png':'image/png','.webp':'image/webp'}[path.extname(full)]||'application/octet-stream'});res.end(data);

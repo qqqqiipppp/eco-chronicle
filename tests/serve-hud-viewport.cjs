@@ -64,7 +64,11 @@ http.createServer(async(req,res)=>{try{
   }
   if(rel==='/index.html'){
     let html=data.toString().replace(/<script defer[^>]*><\/script>/g,tag=>tag.includes('player-list.js')?tag:'');
-    html=html.replace('./css/style.css?v=forest-npc-wrap-all','./css/style.css?'+url.searchParams.toString());
+    html=html.replace(/\.\/css\/style\.css(?:\?[^\"]*)?/,source=>{
+      const cssUrl=new URL(source,'http://localhost/');
+      url.searchParams.forEach((value,key)=>cssUrl.searchParams.set(key,value));
+      return './css/style.css?'+cssUrl.searchParams.toString();
+    });
     if(url.searchParams.has('legacy-dvh'))html=html.replace('</head>','<script>const nativeSupports=CSS.supports.bind(CSS);CSS.supports=(a,b)=>a==="height"&&b==="100dvh"?false:nativeSupports(a,b);</script></head>');
     data=Buffer.from(html.replace('</body>','<script>('+fixture.toString()+')();</script></body>'));
   }
