@@ -13,6 +13,7 @@ const c={console,Math:Object.create(Math),Date,Map,Set,Uint8Array,URL,performanc
 c.window=c;vm.createContext(c);
 for(const file of ['gear-data','npc-data','map-utils','theme-data','learning-data','equipment-ui','ecotech-exploration','ecotech'])
  vm.runInContext(read('js/'+file+'.js'),c,{filename:file});
+vm.runInContext(read('js/student-state.js'),c);
 const source=read('js/game.js');
 vm.runInContext(source.slice(0,source.lastIndexOf('try {\n  S=newState();')),c,{filename:'game.js'});
 for(const file of ['encounters','minigame','plogging','animal-care'])vm.runInContext(read('js/'+file+'.js'),c,{filename:file});

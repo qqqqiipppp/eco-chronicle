@@ -1,0 +1,33 @@
+<!doctype html><html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self'; connect-src 'self' https://akpkwypxupghvcghywab.supabase.co; frame-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>환경 원정대 · 학생 기록 관리</title>
+<link rel="stylesheet" href="./css/admin.css?v=2026.10.24.1">
+</head><body>
+<header><div><p class="eyebrow">ECO CHRONICLE</p><h1>학생 기록 관리</h1></div><button id="logout" hidden>로그아웃</button></header>
+<p id="notice" role="status" aria-live="polite"></p>
+<section id="loginPanel" class="card login">
+  <h2>관리자 로그인</h2><p>등록된 관리자 계정으로 로그인하세요.</p>
+  <form id="loginForm"><label>이메일<input id="email" type="email" autocomplete="username" required></label>
+  <label>비밀번호<input id="password" type="password" autocomplete="current-password" required></label>
+  <button type="submit" id="loginButton">로그인</button></form>
+  <p class="muted">관리 권한은 서버에서 확인합니다. 학생 이어하기 코드로 로그인할 수 없습니다.</p>
+</section>
+<main id="workspace" hidden>
+  <section class="card list-panel"><div class="section-head"><h2>학생 목록</h2><button id="newStudent">새 학생 추가</button></div>
+    <form id="searchForm"><label>이름 / 이어하기 코드 / 기존 번호<input id="query" type="search" maxlength="64" autocomplete="off"></label>
+      <div class="filters"><label>정렬<select id="sort"><option value="updated">최근 저장</option><option value="name">이름</option><option value="level">레벨</option><option value="tower">탑 최고 층</option><option value="created">생성 날짜</option></select></label>
+      <label>상태<select id="filter"><option value="active">정상 학생</option><option value="deleted">삭제된 학생</option><option value="all">전체</option></select></label><button type="submit">검색</button></div>
+    </form><div id="students" class="student-list" aria-label="학생 목록"></div>
+    <nav class="pagination"><button id="previous">이전</button><span id="pageLabel"></span><button id="next">다음</button></nav>
+  </section>
+  <section id="detail" class="card detail-panel" aria-label="학생 상세"><p class="muted">목록에서 학생을 선택하세요.</p></section>
+</main>
+<dialog id="confirmDialog"><h2 id="dialogTitle"></h2><div id="dialogBody"></div><div class="dialog-actions"><button id="cancelDialog" type="button" class="secondary">취소</button><button id="acceptDialog" type="button">확인</button></div></dialog>
+<iframe id="stateRuntime" title="저장 상태 검증" hidden></iframe>
+<script src="./js/build-version.js?v=2026.10.24.1"></script><script src="./js/admin-config.js?v=2026.10.24.1"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
+<script defer src="./js/student-admin-client.js?v=2026.10.24.1"></script>
+<script defer src="./js/student-admin.js?v=2026.10.24.1"></script>
+</body></html>

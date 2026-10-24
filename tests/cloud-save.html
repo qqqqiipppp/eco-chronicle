@@ -1,0 +1,39 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><title>클라우드 세이브 개발 검증</title>
+<style>body{font:16px sans-serif;background:#edf5ed;color:#173a33;max-width:950px;margin:20px auto;padding:12px}button,input,select{font:inherit;min-height:42px;margin:5px;padding:6px 10px}input{width:220px}pre{white-space:pre-wrap;background:white;padding:15px;border:1px solid #9bbaac}iframe{width:100%;height:220px;border:1px solid #9bbaac}.note{font-size:14px}</style>
+<h1>클라우드 세이브 개발 검증</h1><p class="note">실제 학생 대신 TEST 진행 데이터만 사용합니다. 기존 학생 저장 내용은 불러오거나 바꾸지 않습니다.</p>
+<label>대상 <select id="target"><option value="local">로컬 PostgreSQL 검증 서버</option><option value="cloud">실제 Supabase (배포 후)</option></select></label>
+<p><input id="code" aria-label="학생 클라우드 코드" placeholder="EC-XXXX-XXXX" autocomplete="off" spellcheck="false"><button id="create" disabled>TEST 생성</button><button id="load" disabled>코드로 불러오기</button><button id="save" disabled>골드 +5 저장</button></p>
+<pre id="result" role="status">게임의 검증 함수를 준비하고 있어요.</pre>
+<iframe id="game" src="../index.html" title="변경하지 않은 기존 게임"></iframe>
+<script src="../js/cloud-save.js"></script>
+<script>
+const frame=document.getElementById('game'),output=document.getElementById('result');let state,revision,client;
+function result(value){output.textContent=JSON.stringify(value,null,2);}
+function echoCount(){return Object.keys(localStorage).filter(key=>key.startsWith('echo:')).length;}
+function selectClient(){
+  const cfg=document.getElementById('target').value==='local'?{projectUrl:location.origin,publishableKey:'sb_publishable_test_only'}:frame.contentWindow.ecoSupabase?.publicConfig;
+  client=CloudSave.createClient(cfg||{});
+}
+frame.onload=()=>{
+  window.newState=()=>frame.contentWindow.newState();window.migrate=value=>frame.contentWindow.migrate(value);
+  window.CURRENT_SAVE_VERSION=frame.contentWindow.CURRENT_SAVE_VERSION;
+  ['create','load'].forEach(id=>document.getElementById(id).disabled=false);selectClient();
+  result({ready:true,localEchoKeys:echoCount(),saveVersion:CURRENT_SAVE_VERSION});
+};
+document.getElementById('target').onchange=()=>{state=null;revision=null;selectClient();document.getElementById('save').disabled=true;};
+async function action(kind){
+  const before=JSON.stringify(Object.keys(localStorage).sort()),code=document.getElementById('code').value;let response;
+  if(kind==='create'){
+    const sample=Object.assign(newState(),{name:'클라우드TEST',code:'EC9001',petKey:'earth',lv:4,exp:250,gold:180});
+    response=await client.create(sample);if(response.ok){document.getElementById('code').value=response.code;response=await client.load(response.code);}
+  }else if(kind==='load')response=await client.load(code);
+  else{const changed=JSON.parse(JSON.stringify(state));changed.gold+=5;response=await client.save(code,changed,revision);if(response.ok)state=changed;}
+  if(response.ok){if(response.saveData)state=response.saveData;revision=response.revision;document.getElementById('save').disabled=false;}
+  result({ok:response.ok,error:response.error,message:response.message,revision:response.revision||revision,serverRevision:response.serverRevision,
+    name:state?.name,level:state?.lv,gold:state?.gold,saveVersion:response.saveVersion,localEchoKeys:echoCount(),localSaveKeysUnchanged:before===JSON.stringify(Object.keys(localStorage).sort())});
+}
+for(const kind of ['create','load','save'])document.getElementById(kind).onclick=async()=>{
+  const buttons=[...document.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);
+  try{await action(kind);}catch(_){result({ok:false,error:'TEST_HARNESS_ERROR'});}finally{document.getElementById('create').disabled=false;document.getElementById('load').disabled=false;document.getElementById('save').disabled=!state;}
+};
+</script></html>

@@ -32,6 +32,7 @@ function game() {
   for (const file of ['gear-data', 'npc-data', 'map-utils', 'theme-data', 'learning-data', 'equipment-ui', 'ecotech-exploration', 'ecotech', 'tower-elites', 'learning-ui', 'animal-care']) {
     vm.runInContext(read('js/' + file + '.js'), context, { filename: file + '.js' });
   }
+  vm.runInContext(read('js/student-state.js'), context);
   const source = read('js/game.js').replace(/\r\n/g, '\n');
   const startup = source.lastIndexOf('try {\n  S=newState();');
   assert.notEqual(startup, -1, 'isolated harness must exclude only the actual boot block');

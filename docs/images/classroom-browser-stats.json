@@ -1,0 +1,183 @@
+{
+  "beforeTabClose": {
+    "fixture": "LOCAL MOCKS ONLY",
+    "scene": "world",
+    "modal": "online",
+    "theme": "forest",
+    "name": "교실TESTA",
+    "level": 9,
+    "localHero": {
+      "mounted": true,
+      "x": 491,
+      "y": 875,
+      "direction": "east",
+      "worldReady": true,
+      "planeTransform": "translate(0px, -594px)"
+    },
+    "remoteActors": 0,
+    "remoteLabels": 0,
+    "remoteShadows": 0,
+    "remoteRecords": 0,
+    "rosterRows": 30,
+    "tower": {
+      "best": 0,
+      "bestTime": 0,
+      "runs": 0
+    },
+    "presence": {
+      "theme": "forest",
+      "onlinePlayers": 30,
+      "remotePlayers": 0,
+      "movementEnabled": false,
+      "movementIntervalMs": 0,
+      "sent": 0,
+      "received": 0,
+      "ignored": 0,
+      "failures": 0,
+      "requests": 0,
+      "presenceTrackCalls": 1,
+      "presenceTrackSuccesses": 1,
+      "presenceTrackFailures": 0,
+      "channelJoins": 1,
+      "channelLeaves": 0,
+      "subscriptions": 1,
+      "activeChannels": 1,
+      "channelFailures": 0,
+      "reconnectCount": 0,
+      "status": "connected"
+    },
+    "clientCounters": {
+      "sends": 0,
+      "sendEvents": {},
+      "trackCalls": 1,
+      "channelCreates": 1,
+      "channelRemovals": 0,
+      "privacyViolations": 0,
+      "localCloudRequests": 3
+    },
+    "hub": {
+      "joins": 6,
+      "leaves": 4,
+      "tracks": 8,
+      "broadcasts": 0,
+      "broadcastEvents": {},
+      "privacyViolations": 0,
+      "cloudRequests": 12,
+      "presencePolls": 1193,
+      "activeChannels": 2,
+      "syntheticStudents": 28
+    },
+    "cloud": {
+      "status": "saved",
+      "revision": 3,
+      "pending": false,
+      "conflict": false,
+      "active": true,
+      "offline": false,
+      "localSlots": 1
+    },
+    "screen": {
+      "width": 1024,
+      "height": 640,
+      "horizontalOverflow": false
+    },
+    "lastResult": {
+      "action": "28-synthetic-plus-two-real-tabs",
+      "ok": true,
+      "error": null,
+      "revision": null,
+      "checks": null
+    },
+    "errors": []
+  },
+  "afterTabClose": {
+    "fixture": "LOCAL MOCKS ONLY",
+    "scene": "world",
+    "modal": "online",
+    "theme": "forest",
+    "name": "교실TESTA",
+    "level": 9,
+    "localHero": {
+      "mounted": true,
+      "x": 298,
+      "y": 875,
+      "direction": "south",
+      "worldReady": true,
+      "planeTransform": "translate(0px, -535px)"
+    },
+    "remoteActors": 0,
+    "remoteLabels": 0,
+    "remoteShadows": 0,
+    "remoteRecords": 0,
+    "rosterRows": 1,
+    "tower": {
+      "best": 0,
+      "bestTime": 0,
+      "runs": 0
+    },
+    "presence": {
+      "theme": "forest",
+      "onlinePlayers": 1,
+      "remotePlayers": 0,
+      "movementEnabled": false,
+      "movementIntervalMs": 0,
+      "sent": 0,
+      "received": 0,
+      "ignored": 0,
+      "failures": 0,
+      "requests": 0,
+      "presenceTrackCalls": 1,
+      "presenceTrackSuccesses": 1,
+      "presenceTrackFailures": 0,
+      "channelJoins": 1,
+      "channelLeaves": 0,
+      "subscriptions": 1,
+      "activeChannels": 1,
+      "channelFailures": 0,
+      "reconnectCount": 0,
+      "status": "connected"
+    },
+    "clientCounters": {
+      "sends": 0,
+      "sendEvents": {},
+      "trackCalls": 1,
+      "channelCreates": 1,
+      "channelRemovals": 0,
+      "privacyViolations": 0,
+      "localCloudRequests": 2
+    },
+    "hub": {
+      "joins": 6,
+      "leaves": 5,
+      "tracks": 8,
+      "broadcasts": 0,
+      "broadcastEvents": {},
+      "privacyViolations": 0,
+      "cloudRequests": 12,
+      "presencePolls": 1601,
+      "activeChannels": 1,
+      "syntheticStudents": 0
+    },
+    "cloud": {
+      "status": "saved",
+      "revision": 1,
+      "pending": false,
+      "conflict": false,
+      "active": true,
+      "offline": false,
+      "localSlots": 1
+    },
+    "screen": {
+      "width": 955,
+      "height": 884,
+      "horizontalOverflow": false
+    },
+    "lastResult": {
+      "action": "synthetic-removed",
+      "ok": true,
+      "error": null,
+      "revision": null
+    },
+    "errors": []
+  }
+}

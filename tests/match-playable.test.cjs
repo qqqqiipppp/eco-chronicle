@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
-const source=fs.readFileSync(path.join(__dirname,'../js/game.js'),'utf8');
+const source=fs.readFileSync(path.join(__dirname,'../js/student-state.js'),'utf8')+'\n'+fs.readFileSync(path.join(__dirname,'../js/game.js'),'utf8');
 // Default execution is the full audit; --focused also runs every targeted regression.
 const focused=process.argv.includes('--focused'),initialBoards=focused?5:1000,stableRandomBoards=focused?20:5000;
 const nodes=new Map(),timers=[];

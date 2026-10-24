@@ -32,6 +32,9 @@ function update(version,projectRoot=root){
   const index=path.join(projectRoot,'index.html'),css=path.join(projectRoot,'css/style.css');
   const updates=[[versionFile,source],[index,stampHtml(fs.readFileSync(index,'utf8'),version)],
     [css,stampCss(fs.readFileSync(css,'utf8'),version)]];
+  for(const name of ['admin.html','admin-state.html']){
+    const file=path.join(projectRoot,name);if(fs.existsSync(file))updates.push([file,stampHtml(fs.readFileSync(file,'utf8'),version)]);
+  }
   let changed=0;
   for(const [file,next] of updates)if(fs.readFileSync(file,'utf8')!==next){fs.writeFileSync(file,next);changed++;}
   return {version,changed};

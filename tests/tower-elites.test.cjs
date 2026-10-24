@@ -8,6 +8,7 @@ const c={console,Math:Object.create(Math),Date,Map,Set,Uint8Array,performance:{n
   requestAnimationFrame(){},cancelAnimationFrame(){},SPRITES:{},Image:class{},navigator:{}};
 c.window=c;vm.createContext(c);
 for(const file of ['gear-data','npc-data','map-utils','theme-data','learning-data','equipment-ui','ecotech-exploration','ecotech','tower-elites'])vm.runInContext(read('js/'+file+'.js'),c);
+vm.runInContext(read('js/student-state.js'),c);
 const source=read('js/game.js');vm.runInContext(source.slice(0,source.lastIndexOf('try {\n  S=newState();')),c);
 const elites=vm.runInContext('TOWER_ELITES',c);
 for(const fn of ['playSfx','bgmUpdate','paintBattle','bpop','banim','btag','fx','towerElitePose','showLose','showLvUp','toast'])c[fn]=()=>{};

@@ -8,7 +8,7 @@ const { webcrypto } = require('node:crypto');
 const timers = new Map(), channels = [], listeners = {};
 let timerId = 0, remote = null, roster = null, trackCalls = 0, removed = 0, memberCalls = 0, warnings = 0;
 let now = 100000;
-const state = { themeId: 'forest', name: '나', lv: 5, petKey: 'earth' };
+const state = { themeId: 'forest', name: '나', code: 'presence-test', scene: 'world', lv: 5, petKey: 'earth' };
 function peer(i, theme = 'forest') {
   return { playerId: `peer-${i}`, nickname: `학생${i}`, theme, joinedAt: `j-${i}`,
     hair: 'messy', face: 'bright', outfit: 'cloak', skin: 'light', haircol: 'brown', direction: 'south',
@@ -32,13 +32,16 @@ const client = {
 const c = { console: { info() {}, warn() { warnings++; } }, crypto: webcrypto,
   Date: class extends Date { static now() { return now; } },
   navigator: { onLine: true },
-  S: state, ecoSupabase: { client },
+  S: state, Wd: { ready: true }, EcoMultiplayerConfig: { movementEnabled: true }, ecoSupabase: { client },
   ecoRemotePlayers: { appearance: p => p, sync: (self, theme, players) => { remote = { self, theme, players }; }, refresh() {} },
   ecoOnlinePlayers: { summary: () => ({ spirit: '조약돌 정령', level: state.lv, equipment: '없음', progress: '숲 1단계' }),
     sanitize: p => ({ spirit: p.spirit, level: p.level, equipment: p.equipment, progress: p.progress }),
     update: (self, theme, players) => { roster = { self, theme, players }; } },
   ecoMovement: { attach() {}, detach() {}, ready() {}, members() { memberCalls++; } },
-  document: { body: { appendChild() {} }, createElement() { return { style: {}, setAttribute() {}, textContent: '' }; } },
+  document: { body: { appendChild() {} }, getElementById(id) { return id === 'plane' ? {} : null; },
+    addEventListener(name, callback) { listeners['document:' + name] = callback; },
+    createElement() { return { style: {}, setAttribute() {}, textContent: '' }; } },
+  setTimeout, clearTimeout,
   setInterval(callback, ms) { timers.set(++timerId, { callback, ms }); return timerId; },
   clearInterval(id) { timers.delete(id); }, addEventListener(name, callback) { listeners[name] = callback; } };
 c.window = c;
@@ -86,9 +89,14 @@ async function poll() { for (const item of timers.values()) item.callback(); awa
   channel = channels.at(-1);
   channel.subscribed('TIMED_OUT');
   assert.equal(remote.players.length, 0, 'timeout clears remote display');
+  const timedOutChannels = channels.length, timedOutRemoved = removed;
   now += 3100;
   await poll();
-  assert.equal(channels.length - removed, 1, 'timeout replaces rather than duplicates a channel');
+  assert.equal(channels.length, timedOutChannels, 'timeout lets the SDK recover the existing channel');
+  assert.equal(removed, timedOutRemoved, 'timeout does not remove a recoverable channel');
+  assert.equal(channels.length - removed, 1, 'timeout retains a single active channel');
+  channel.subscribed('SUBSCRIBED'); await flush();
+  assert.equal(roster.players.length, 35, 'timeout recovery re-tracks the existing channel');
   assert.equal(c.ecoMultiplayer.getStats().reconnectCount, 2, 'error recovery counted');
   c.ecoMultiplayer.disable(); await flush();
   assert.equal(c.ecoMultiplayer.getStats().status, 'offline');

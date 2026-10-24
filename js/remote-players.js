@@ -17,6 +17,17 @@
     return result;
   }
 
+  if (!window.EcoMultiplayerConfig || window.EcoMultiplayerConfig.movementEnabled !== true) {
+    // Also clear any actors left by a previously mounted renderer. Never touch #hero.
+    if (window.ecoRemotePlayers) window.ecoRemotePlayers.sync(null, null, []);
+    document.querySelectorAll('#ecoRemoteLayer, .eco-remote-player').forEach(function (node) { node.remove(); });
+    var noop = function () {};
+    window.ecoRemotePlayers = { enabled: false, remotePlayers: remotePlayers, appearance: appearance,
+      sync: noop, refresh: noop, temporaryPosition: function () { return null; }, setPosition: noop,
+      receivePosition: function () { return false; } };
+    return;
+  }
+
   function remove(id) {
     var player = remotePlayers[id];
     if (player && player.element) player.element.remove();
@@ -224,7 +235,7 @@
     refresh();
   }
 
-  window.ecoRemotePlayers = { remotePlayers: remotePlayers, appearance: appearance,
+  window.ecoRemotePlayers = { enabled: true, remotePlayers: remotePlayers, appearance: appearance,
     sync: sync, refresh: refresh, temporaryPosition: temporaryPosition, setPosition: setPosition,
     receivePosition: receivePosition };
   // A map is rebuilt when returning from the theme menu. Remount the same records.

@@ -89,6 +89,8 @@ class Element {
 
 function createDocument() {
   const document = {
+    listeners: {},
+    addEventListener(name, callback) { (document.listeners[name] ||= []).push(callback); },
     createElement(tag) { return new Element(tag, document); },
     getElementById(id) { return document.body.id === id ? document.body : document.body.querySelector('#' + id); },
     querySelector(selector) { return document.body.querySelector(selector); },
@@ -101,6 +103,8 @@ function createDocument() {
   const modal = document.createElement('div'); modal.id = 'modalHost';
   const sheet = document.createElement('div'); sheet.className = 'sheet';
   modal.appendChild(sheet); document.body.appendChild(modal);
+  const plane = document.createElement('div'); plane.id = 'plane';
+  document.body.appendChild(plane);
   return document;
 }
 
@@ -140,9 +144,10 @@ function browser(hub, identity, state) {
   const document = createDocument();
   const timers = new Map(), listeners = {}, warnings = [];
   const client = hub.client();
-  let timerId = 0;
+  let timerId = 0, now = 100000;
   const context = {
-    S: state, document, navigator: { onLine: true },
+    S: state, Wd: { ready: true }, document, navigator: { onLine: true },
+    Date: class extends Date { static now() { return now; } },
     console: { info() {}, warn(message) { warnings.push(message); } },
     crypto: { getRandomValues(bytes) { return bytes.fill(identity); } },
     THEMES: {
@@ -152,6 +157,7 @@ function browser(hub, identity, state) {
     PETS: { earth: {} }, petName: () => '조약돌 정령',
     gearFind: (slot, id) => slot === 'weapon' && id === 'leaf' ? { name: '잎사귀 검' } : null,
     ecoSupabase: { client },
+    setTimeout, clearTimeout,
     setInterval(callback, ms) { timers.set(++timerId, { callback, ms }); return timerId; },
     clearInterval(id) { timers.delete(id); },
     addEventListener(name, callback) { listeners[name] = callback; },
@@ -162,6 +168,7 @@ function browser(hub, identity, state) {
   vm.runInContext(source('player-list.js'), context, { filename: 'player-list.js' });
   vm.runInContext(source('presence.js'), context, { filename: 'presence.js' });
   return { context, document, timers, listeners, warnings, client, state,
+    advance(ms) { now += ms; },
     get rows() { return document.getElementById('ecoOnlineRows').children; } };
 }
 
@@ -175,7 +182,7 @@ async function poll(...browsers) {
 }
 
 function fixture(name, level, best, bestTime) {
-  return { name, lv: level, scene: 'world', modal: null, themeId: 'forest', petKey: 'earth',
+  return { name, code: 'tower-test', lv: level, scene: 'world', modal: null, themeId: 'forest', petKey: 'earth',
     gear: { weapon: 'leaf' }, monIdx: 0, cleared: [],
     tower: { best, bestTime, runs: 4, history: [{ floor: best, time: bestTime }] } };
 }
@@ -205,6 +212,7 @@ function pair(value) { return [value.towerBestFloor, value.towerBestTime]; }
   const bob = browser(hub, 2, fixture('강물', 40, 11, 79));
   const savedTowers = [plain(alice.state.tower), plain(bob.state.tower)];
   await flush(); await flush();
+  assert.deepEqual([...alice.warnings, ...bob.warnings], [], 'Presence initializes without swallowed errors');
   for (const tab of [alice, bob]) {
     tab.document.querySelector('.eco-online-button').click();
     assert.equal(tab.state.modal, 'online', 'real online button opens the existing modal');
@@ -266,6 +274,7 @@ function pair(value) { return [value.towerBestFloor, value.towerBestTime]; }
 
   let before = alice.client.tracks.length;
   alice.state.tower.best = 19; alice.state.tower.bestTime = 600;
+  alice.advance(10000);
   await poll(alice);
   assert.equal(alice.client.tracks.length - before, 1, 'new best floor publishes exactly once');
   assert.deepEqual(pair(alice.client.tracks.at(-1)), [19, 600]);
@@ -275,11 +284,13 @@ function pair(value) { return [value.towerBestFloor, value.towerBestTime]; }
 
   before = alice.client.tracks.length;
   alice.state.tower.bestTime = 599;
+  alice.advance(10000);
   await poll(alice);
   assert.equal(alice.client.tracks.length - before, 1, 'improved time on the same floor publishes exactly once');
   expectTower(alice, '나무', '19층 · 09:59'); expectTower(bob, '나무', '19층 · 09:59');
   const bobBefore = bob.client.tracks.length;
   bob.state.tower.best = 18; bob.state.tower.bestTime = 420;
+  bob.advance(10000);
   await poll(bob);
   assert.equal(bob.client.tracks.length - bobBefore, 1, 'the other client can also publish its record');
   expectTower(alice, '강물', '18층 · 07:00'); expectTower(bob, '강물', '18층 · 07:00');
@@ -297,6 +308,7 @@ function pair(value) { return [value.towerBestFloor, value.towerBestTime]; }
 
   delete alice.state.tower;
   before = alice.client.tracks.length;
+  alice.advance(10000);
   await poll(alice);
   assert.equal(alice.client.tracks.length - before, 1, 'legacy local save publishes the no-record pair');
   expectTower(alice, '나무', '기록 없음'); expectTower(bob, '나무', '기록 없음');

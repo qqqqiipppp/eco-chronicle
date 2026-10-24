@@ -1,0 +1,9 @@
+project_id = "eco-chronicle"
+
+# Student codes are bearer capabilities. No student Auth account is used.
+# This applies only to this NEW function, never to existing Realtime settings.
+[functions.student-save]
+verify_jwt = false
+
+[functions.student-admin]
+verify_jwt = true

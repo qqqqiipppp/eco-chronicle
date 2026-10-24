@@ -1,0 +1,10 @@
+.eco-cloud-sheet{width:min(500px,94vw);max-height:88dvh;overflow-y:auto}
+.eco-cloud-sheet .col{gap:10px}.eco-cloud-sheet .btn{min-height:44px}
+.eco-cloud-code{display:block;text-align:center;font-size:clamp(23px,4vw,34px);letter-spacing:2px;padding:18px 4px;user-select:all;color:var(--gold)}
+.eco-cloud-message{min-height:22px;font-size:13px;line-height:1.5;color:var(--gold);margin:8px 0}
+.eco-cloud-input{width:100%;box-sizing:border-box;letter-spacing:2px;text-transform:uppercase;min-height:46px}
+.eco-cloud-summary{font-size:13px;line-height:1.7;overflow-wrap:anywhere}
+.eco-cloud-status{font-size:10px;line-height:1.3;white-space:nowrap;color:var(--gold)}
+.eco-cloud-menu{display:flex;align-items:center;gap:3px;flex-wrap:wrap}
+.eco-cloud-menu>.iconbtn{font-size:11px;padding-inline:7px;min-height:38px}
+@media(max-width:800px){.eco-cloud-status{max-width:90px;white-space:normal}.eco-cloud-menu>.iconbtn{font-size:10px;padding-inline:5px}}

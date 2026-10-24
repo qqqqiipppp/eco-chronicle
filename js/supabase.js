@@ -5,7 +5,8 @@
   var projectUrl = 'https://akpkwypxupghvcghywab.supabase.co';
   // Public browser key, not a service_role/secret key or a database password.
   var publishableKey = 'sb_publishable_8p_lpzKpnJMKweoy_9V0-g_4yufqBBO';
-  var connection = { client: null, status: 'initializing', error: null };
+  var connection = { client: null, status: 'initializing', error: null,
+    publicConfig: Object.freeze({projectUrl:projectUrl, publishableKey:publishableKey}) };
   window.ecoSupabase = connection;
 
   async function initialize() {

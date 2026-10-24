@@ -4,12 +4,13 @@ const root=path.resolve(__dirname,'..'),read=f=>fs.readFileSync(path.join(root,f
 const nodes=new Map(),storage=new Map();
 const node=()=>({innerHTML:'',textContent:'',clientWidth:1280,clientHeight:720,style:{},classList:{add(){},remove(){},toggle(){}},querySelector(){return null;},querySelectorAll(){return [];}});
 const c={console,Math:Object.create(Math),Date,Map,Set,Uint8Array,performance:{now:()=>0},
-  document:{getElementById:id=>{if(!nodes.has(id))nodes.set(id,node());return nodes.get(id);},querySelectorAll:()=>[],addEventListener(){}},
+  document:{documentElement:{style:{setProperty(){}}},getElementById:id=>{if(!nodes.has(id))nodes.set(id,node());return nodes.get(id);},querySelectorAll:()=>[],addEventListener(){}},
   localStorage:{setItem:(k,v)=>storage.set(k,v),getItem:k=>storage.get(k)||null,removeItem:k=>storage.delete(k)},
   setTimeout(){return 1;},clearTimeout(){},setInterval(){return 1;},clearInterval(){},requestAnimationFrame(){return 1;},cancelAnimationFrame(){},
   addEventListener(){},SPRITES:{},Image:class{},navigator:{}};
 c.window=c;vm.createContext(c);
 for(const f of ['gear-data','npc-data','map-utils','theme-data','learning-data','equipment-ui','ecotech-exploration','ecotech'])vm.runInContext(read('js/'+f+'.js'),c,{filename:f});
+vm.runInContext(read('js/student-state.js'),c);
 const game=read('js/game.js');vm.runInContext(game.slice(0,game.lastIndexOf('try {\n  S=newState();')),c);
 for(const f of ['paintMood','refreshObjs','paintNpcs','startLoop','bindControls','bgmUpdate','admBadge','paintHud','drawModal','toast','playSfx','updateGuide','setHeroFacing','setCompanionFacing','syncStride'])c[f]=()=>{};
 for(const f of ['heroSprite','npcSVG','battleSpotSVG','bushSVG','campSVG','shopSVG','altarSVG','sp','shadowSprite','petSprite','butterflySVG'])c[f]=()=>'';

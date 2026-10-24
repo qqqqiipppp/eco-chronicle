@@ -1,5 +1,5 @@
 /* Deployment version only. Save schema versions are maintained separately. */
-var BUILD_VERSION = '2026.10.07.4';
+var BUILD_VERSION = '2026.10.24.1';
 
 function ecoAssetUrl(source){
   if(typeof source!=='string'||/^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(source))return source;

@@ -1,6 +1,15 @@
 /* Optional world-only Broadcast transport. Never writes game/save state. */
 (function () {
   'use strict';
+  if (!window.EcoMultiplayerConfig || window.EcoMultiplayerConfig.movementEnabled !== true) {
+    // No channel listeners, requests, timers or sends in classroom mode.
+    if (window.ecoMovement) window.ecoMovement.detach();
+    var noop = function () {};
+    window.ecoMovement = { enabled: false, attach: noop, detach: noop, ready: noop, members: noop,
+      getStats: function () { return { intervalMs: 0, onlineRemotePlayers: 0,
+        sent: 0, received: 0, ignored: 0, requests: 0, failures: 0 }; } };
+    return;
+  }
   var active = null, sequence = 0;
   var DEFAULT_INTERVAL = 125, LOW_INTERVAL = 200, interval = DEFAULT_INTERVAL;
   var timer = null, lowLoad = false, slowFrames = 0, slowSends = 0;
@@ -154,7 +163,7 @@
   }, 10000);
   window.addEventListener('pagehide', function () { clearInterval(timer); timer = null; detach(); });
   window.addEventListener('pageshow', function () { clearInterval(timer); timer = setInterval(tick, interval); });
-  window.ecoMovement = { attach: attach, detach: detach, ready: ready, members: members,
+  window.ecoMovement = { enabled: true, attach: attach, detach: detach, ready: ready, members: members,
     getStats: function () { return Object.assign({ intervalMs: interval,
       onlineRemotePlayers: window.ecoRemotePlayers ? Object.keys(window.ecoRemotePlayers.remotePlayers).length : 0 }, stats); } };
 })();

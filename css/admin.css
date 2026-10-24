@@ -1,0 +1,22 @@
+:root{color-scheme:light;--ink:#203a34;--green:#21634f;--border:#cedbd3;--muted:#536a62;--danger:#983d37}
+*{box-sizing:border-box}body{margin:0;background:#edf2ed;color:var(--ink);font:14px/1.5 system-ui,sans-serif}
+body>header{padding:22px 28px;background:#173e33;color:white;display:flex;justify-content:space-between;align-items:center}
+h1,h2,h3,p{margin:0 0 10px}h1{font-size:24px}h2{font-size:19px}h3{font-size:16px}.eyebrow{font-size:11px;letter-spacing:2px;color:#bfd4b9}
+#notice{margin:0;padding:12px 28px;min-height:45px;color:var(--green)}#notice.error{color:var(--danger)}
+.card{background:white;border:1px solid var(--border);border-radius:12px;padding:20px}.login{max-width:420px;margin:30px auto}
+main{display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:18px;padding:0 24px 30px;max-width:1600px;margin:auto}
+label{display:flex;flex-direction:column;gap:5px;font-weight:600;margin-bottom:12px}input,select,button{font:inherit;min-height:40px;border:1px solid var(--border);border-radius:6px;padding:8px 10px;max-width:100%}
+input,select{background:white;color:var(--ink);width:100%}input[type=checkbox]{width:20px;min-height:20px;flex-shrink:0}
+button{background:var(--green);color:white;cursor:pointer}button:hover{filter:brightness(.95)}button:disabled{opacity:.5;cursor:wait}
+button.secondary{background:#edf2ed;color:var(--ink)}button.danger{background:var(--danger)}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #e9bd53;outline-offset:2px}
+.section-head,.filters,.pagination,.actions,.dialog-actions{display:flex;gap:10px;align-items:center;justify-content:space-between}.filters>label{flex:1;min-width:0}.muted{color:var(--muted);font-size:12px}
+.student-list{max-height:65dvh;overflow:auto;display:flex;flex-direction:column;gap:8px}.student-row{background:#f4f7f3;color:var(--ink);text-align:left;padding:12px;white-space:normal;overflow-wrap:anywhere}.student-row strong,.student-row span{display:block}.student-row[aria-current=true]{border:2px solid var(--green)}.deleted{color:var(--danger)}
+.pagination{margin-top:16px}.detail-panel{min-width:0}.detail-meta{background:#f4f7f3;border-radius:6px;padding:12px;overflow-wrap:anywhere}
+.form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.form-grid label{margin:0}.check{display:flex;flex-direction:row;align-items:center;font-weight:400;margin:8px 0}.check-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 14px}
+details{border-top:1px solid var(--border);padding:14px 0}summary{cursor:pointer;font-weight:700;margin-bottom:10px}.form-section{padding:14px 0}.actions{justify-content:flex-start;flex-wrap:wrap;margin:16px 0}.danger-zone{margin-top:24px;padding:16px;border:1px solid #dcb9b3;border-radius:8px;background:#fff8f5}
+.scroll{max-height:350px;overflow:auto}.farm-row{display:grid;grid-template-columns:40px 1fr 90px 90px;align-items:end;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}.pen-row{grid-template-columns:40px 1fr repeat(4,70px)}
+pre{font:12px/1.5 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;background:#f2f5f1;padding:12px;max-height:400px;overflow:auto}
+.secret{font:600 23px ui-monospace,monospace;user-select:all;letter-spacing:1px;padding:12px;background:#fff4d1;border-radius:8px;margin:10px 0}
+dialog{border:1px solid var(--border);border-radius:12px;padding:24px;max-width:min(560px,94vw);max-height:90dvh;overflow:auto;color:var(--ink)}dialog::backdrop{background:#10271b99}.dialog-actions{margin-top:20px;justify-content:flex-end}
+[hidden]{display:none!important}@media(max-width:1000px){main{grid-template-columns:310px minmax(0,1fr);padding-inline:12px}.card{padding:14px}.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pen-row{grid-template-columns:35px 1fr 60px}.student-list{max-height:60dvh}}
+@media(max-width:700px){main{grid-template-columns:1fr}.student-list{max-height:38dvh}body>header{padding:16px}.check-grid{grid-template-columns:1fr}.farm-row{grid-template-columns:30px 1fr 65px}.login{margin:20px 12px}h1{font-size:21px}}

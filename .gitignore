@@ -1,0 +1,7 @@
+# Local Supabase credentials/runtime state are never part of the static site.
+.env
+.env.*
+!.env.example
+supabase/.temp/
+supabase/.branches/
+node_modules/
