@@ -1,0 +1,472 @@
+{
+  "at": "2026-10-25T06:20:21.402Z",
+  "site": "https://qqqqiipppp.github.io/eco-chronicle/",
+  "documents": 3,
+  "uniqueDependencies": 48,
+  "non200": 0,
+  "byteDifferences": 14,
+  "textDifferences": 0,
+  "secretSuspects": [],
+  "rows": [
+    {
+      "file": "index.html",
+      "status": 200,
+      "localMatch": false,
+      "textMatch": true,
+      "etag": "W/\"6adc9b51-e75\"",
+      "lastModified": "Sat, 24 Oct 2026 11:49:37 GMT",
+      "cacheControl": "max-age=600"
+    },
+    {
+      "file": "admin.html",
+      "status": 200,
+      "localMatch": true,
+      "textMatch": true,
+      "etag": "W/\"6adc9b51-cc5\"",
+      "lastModified": "Sat, 24 Oct 2026 11:49:37 GMT",
+      "cacheControl": "max-age=600"
+    },
+    {
+      "file": "admin-state.html",
+      "status": 200,
+      "localMatch": true,
+      "textMatch": true,
+      "etag": "W/\"6adc9b51-329\"",
+      "lastModified": "Sat, 24 Oct 2026 11:49:37 GMT",
+      "cacheControl": "max-age=600"
+    },
+    {
+      "file": "css/style.css",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": false,
+      "textMatch": true,
+      "bytes": 90839,
+      "secretSuspect": false
+    },
+    {
+      "file": "css/animal-care.css",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": false,
+      "textMatch": true,
+      "bytes": 12761,
+      "secretSuspect": false
+    },
+    {
+      "file": "css/online-players.css",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 1616,
+      "secretSuspect": false
+    },
+    {
+      "file": "css/sound-settings.css",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 964,
+      "secretSuspect": false
+    },
+    {
+      "file": "css/cloud-save.css",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 948,
+      "secretSuspect": false
+    },
+    {
+      "file": "css/ecotech.css",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 7128,
+      "secretSuspect": false
+    },
+    {
+      "file": "css/ecotech-world-art.css",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 1201,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/boot.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": false,
+      "textMatch": true,
+      "bytes": 673,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/build-version.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 1039,
+      "secretSuspect": false,
+      "build": "2026.10.24.1"
+    },
+    {
+      "file": "js/sprites.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 16628,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/sprite-meta.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 14096,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/player-tint.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 4366,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/visuals.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 81034,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/audio-data.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 19013,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/gear-data.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 8725,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/equipment-ui.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 2577,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/ecotech-exploration.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 7662,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/ecotech.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": false,
+      "textMatch": true,
+      "bytes": 21895,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/npc-data.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": false,
+      "textMatch": true,
+      "bytes": 16448,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/map-utils.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 463,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/theme-data.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 106649,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/learning-data.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": false,
+      "textMatch": true,
+      "bytes": 154057,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/learning-ui.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 7389,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/learning-diagrams.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 13154,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/battle-view.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": false,
+      "textMatch": true,
+      "bytes": 2761,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/encounters.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": false,
+      "textMatch": true,
+      "bytes": 5309,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/minigame.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": false,
+      "textMatch": true,
+      "bytes": 27547,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/tower-elites.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": false,
+      "textMatch": true,
+      "bytes": 3026,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/animal-care.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": false,
+      "textMatch": true,
+      "bytes": 21132,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/student-state.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 2488,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/game.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 301105,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/sound-settings.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 3130,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/plogging.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": false,
+      "textMatch": true,
+      "bytes": 30462,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/cloud-save.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 9805,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/cloud-sync.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 21399,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/cloud-ui.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 10123,
+      "secretSuspect": false
+    },
+    {
+      "file": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js",
+      "status": 200,
+      "version": null,
+      "localMatch": null,
+      "textMatch": null,
+      "bytes": 217874,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/supabase.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 3158,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/multiplayer-config.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 304,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/remote-players.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 12057,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/movement.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 7696,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/player-list.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": false,
+      "textMatch": true,
+      "bytes": 7376,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/presence.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 17414,
+      "secretSuspect": false
+    },
+    {
+      "file": "css/admin.css",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 4092,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/admin-config.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 243,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/student-admin-client.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 3390,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/student-admin.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 22196,
+      "secretSuspect": false
+    },
+    {
+      "file": "js/admin-state-boot.js",
+      "status": 200,
+      "version": "2026.10.24.1",
+      "localMatch": true,
+      "textMatch": true,
+      "bytes": 108,
+      "secretSuspect": false
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "inspectedBuild": "2026.10.24.1",
+  "saveVersion": 9,
+  "tests": 116,
+  "pass": 116,
+  "fail": 0,
+  "durationMs": 67851.8548,
+  "mode": "isolated VM and PostgreSQL, not production load",
+  "liveTestAutoSaveDelayMs": 1503,
+  "liveTestBroadcasts": 0,
+  "liveTestRemoteActors": 0,
+  "liveTestCleanup": [
+    {
+      "backups": 2,
+      "revision": 8,
+      "name": "TESTK8A",
+      "softDeleted": true
+    },
+    {
+      "backups": 4,
+      "revision": 5,
+      "name": "TESTK8B",
+      "softDeleted": true
+    }
+  ],
+  "currentBillingUsage": "unverified",
+  "restrictionWarning20261025": "unverified"
+}
