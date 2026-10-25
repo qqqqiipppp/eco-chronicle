@@ -33,9 +33,11 @@
     function online() { return options.online ? options.online() : !root.navigator || root.navigator.onLine !== false; }
     function alive(token, link) { return token === epoch && session && session.link === link; }
     function key(link) { return 'echo:cloud:' + link.id; }
+    // Retain old device backups, but never accept old codes in the new code-entry UI.
+    function legacyCode(code) {return typeof code==='string'&&/^EC-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}$/.test(code);}
     function validLink(link) {
       return link && typeof link.id === 'string' && /^[0-9a-f-]{36}$/i.test(link.id) && /^EC\d{4}$/.test(link.localCode) &&
-        ['local','cache'].includes(link.kind) && (!link.cloudCode || api.normalizeCode(link.cloudCode) === link.cloudCode) &&
+        ['local','cache'].includes(link.kind) && (!link.cloudCode || api.normalizeCode(link.cloudCode) === link.cloudCode || legacyCode(link.cloudCode)) &&
         Number.isSafeInteger(link.revision) && link.revision >= 0;
     }
     Object.keys(links).forEach(function (id) { if (!validLink(links[id]) || links[id].id !== id) delete links[id]; });
@@ -68,10 +70,11 @@
     function snapshot(state) { return api.snapshot(state); }
     function equal(a,b) { return stable(snapshot(a)) === stable(snapshot(b)); }
     async function loadServer(code,link) {
-      var result=await api.load(code);
+      var result=await api.load(code,link&&link.resumeToken);
       if(result.ok&&(!result.saveData||!/^EC\d{4}$/.test(result.saveData.code)||(link&&result.saveData.code!==link.localCode))) {
         return {ok:false,error:'INVALID_SAVE_DATA',message:'저장 기록을 확인하지 못했어요. 이 기기의 기존 기록은 그대로예요.'};
       }
+      if(result.ok&&link&&result.resumeToken){link.resumeToken=result.resumeToken;metadata();}
       return result;
     }
     function current(link) {
@@ -91,6 +94,7 @@
     }
     function acknowledged(link, result, state) {
       link.revision = result.revision; link.lastSyncedAt = result.updatedAt;
+      if(result.resumeToken)link.resumeToken=result.resumeToken;
       var latest = current(link) || state, pending = !equal(latest,state);
       persist(link,latest,pending); session.status = pending?'pending':'saved'; failures = 0; emit();
     }
@@ -117,6 +121,7 @@
             if (!alive(token,link)) return result;
             if (result.ok) {
               link.cloudCode = result.code; link.revision = result.revision; link.lastSyncedAt = result.updatedAt;
+              if(result.resumeToken)link.resumeToken=result.resumeToken;
               // Persist the confirmed code even if the subsequent verification request fails.
               persist(link,current(link),true);
               var server = await loadServer(link.cloudCode,link);
@@ -131,7 +136,7 @@
               return result;
             }
           } else {
-            result = await api.save(link.cloudCode,attempt,link.revision);
+            result = await api.save(link.cloudCode,attempt,link.revision,link.resumeToken);
             if (!alive(token,link)) return result;
             if (result.ok) { acknowledged(link,result,attempt); return result; }
             if (result.error === 'REVISION_CONFLICT') {
@@ -147,6 +152,7 @@
           if(result&&result.error==='NOT_FOUND'){
             session.blocked=true;session.relink=true;session.status='relink';emit('relink');return result;
           }
+          if(result&&result.retryAfter)session.retryAt=Date.now()+result.retryAfter*1000;
           session.status = 'offline'; failures++; emit(!link.cloudCode?'create-failed':'state'); return result;
         } catch (_) {
           if (alive(token,link)) { session.status = 'offline'; failures++; emit(); }
@@ -157,7 +163,7 @@
       finally {
         flight = null;
         if (session && !session.conflict && !session.blocked && (session.link.pendingSync || (!session.link.cloudCode && session.link.createRequestId))) {
-          schedule(failures ? Math.min(60000,5000*Math.pow(2,Math.min(failures-1,4))) : debounce);
+          schedule(Math.max(session.retryAt-Date.now()||0,failures ? Math.min(60000,5000*Math.pow(2,Math.min(failures-1,4))) : debounce));
         }
       }
     }
@@ -195,10 +201,15 @@
       if(link.kind==='cache')cacheOwners.set(options.state(),link);
       return true;
     }
-    function networkError(result) { return ['NETWORK_ERROR','TIMEOUT','SERVER_UNAVAILABLE','NOT_CONFIGURED'].includes(result.error); }
+    function networkError(result) { return ['NETWORK_ERROR','TIMEOUT','SERVER_UNAVAILABLE','NOT_CONFIGURED','RATE_LIMITED'].includes(result.error); }
     async function resumeLinked(link, local) {
       if (flight) return {ok:false,error:'BUSY'};
       if (!local) return {ok:false,error:'NO_BACKUP',message:'이 기기에서 저장 기록을 찾지 못했어요.'};
+      if(legacyCode(link.cloudCode)) {
+        if(!safeResume(local,link))return {ok:false,error:'INVALID_SAVE_DATA'};
+        session.blocked=true;session.relink=true;emit('relink');
+        return {ok:true,offline:true,legacy:true};
+      }
       if (!link.cloudCode) {
         if(!safeResume(local,link))return {ok:false,error:'INVALID_SAVE_DATA'};
         if (link.createRequestId) schedule(0); return {ok:true};
@@ -242,6 +253,7 @@
       if (token !== epoch) return {ok:false,error:'CANCELLED'};
       if (!result.ok) return result;
       link = makeLink(result.saveData,'cache'); link.cloudCode=code; link.revision=result.revision; link.lastSyncedAt=result.updatedAt;
+      if(result.resumeToken)link.resumeToken=result.resumeToken;
       persist(link,result.saveData,false);if(!safeResume(result.saveData,link))return {ok:false,error:'INVALID_SAVE_DATA'};
       return {ok:true};
     }
@@ -286,7 +298,7 @@
           if(link.kind==='cache')cacheOwners.set(options.state(),link);
           session.status='saved';emit();return {ok:true};
         }
-        var saved=await api.save(link.cloudCode,local,latest.revision);
+        var saved=await api.save(link.cloudCode,local,latest.revision,link.resumeToken);
         if (!alive(token,link)) return saved;
         if (saved.ok) {session.conflict=null;acknowledged(link,saved,local);return saved;}
         // One deliberate attempt only; a new competing writer needs a fresh choice.

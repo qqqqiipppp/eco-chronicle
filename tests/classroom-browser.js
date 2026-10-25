@@ -10,7 +10,7 @@
 
   function safeMessage(value) {
     return String(value || '').replace(/EC-?[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}-?[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}/g,
-      '[private test code]').slice(0, 220);
+      '[private test code]').replace(/\b(?=[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}\b)(?=[A-Z2-9]*[2-9])[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}\b/g,'[private test code]').slice(0, 220);
   }
   function error(message) { if (errors.length < 30) errors.push(safeMessage(message)); }
   addEventListener('error', function (event) { error(event.message); });
@@ -19,7 +19,7 @@
   catch (_) { error('Local offline simulation is unavailable in this browser'); }
   window.fetch = function (input, init) {
     var address = new URL(typeof input === 'string' ? input : input.url, location.href);
-    if (address.origin === location.origin && address.pathname === '/functions/v1/student-save') {
+    if (address.origin === location.origin && address.pathname === '/functions/v1/student-save-v2') {
       metrics.localCloudRequests++;
       if (window.__classroomOffline) return Promise.reject(new TypeError('Local QA offline'));
     }

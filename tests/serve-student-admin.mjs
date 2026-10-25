@@ -1,3 +1,4 @@
+import {testSecret} from './helpers/cloud-save-runtime.mjs';
 // Local integration environment ONLY. Uses the real pinned SDK and handler, isolated
 // PostgreSQL and the signed Auth contract fixture. Never connects to production Auth.
 import http from 'node:http';import fs from 'node:fs/promises';import path from 'node:path';import {Readable} from 'node:stream';import {randomUUID} from 'node:crypto';
@@ -7,7 +8,7 @@ import {createHandler} from '../supabase/functions/student-save/handler.mjs';
 const setup=await adminDatabase(),fixture=adminApi(setup),port=54441,origin='http://127.0.0.1:'+port;
 const sdk=await(await fetch('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js')).text();
 if(!sdk.includes('createClient'))throw Error('Pinned SDK unavailable');
-const studentHandler=createHandler({rpc:setup.rpc,publicKeys:['sb_publishable_admin_test'],allowedOrigins:[origin]});
+const studentHandler=createHandler({secret:testSecret,rpc:setup.rpc,publicKeys:['sb_publishable_admin_test'],allowedOrigins:[origin]});
 const made=await fixture.call({action:'create',name:'관리TEST1',petKey:'earth',createRequestId:randomUUID()});
 const g=game(),legacy=g.c.migrate(JSON.parse(read('tests/fixtures/legacy-save/last-week.json')));legacy.name='과거TEST';legacy.code='EC1234';
 await setup.db.query('update public.student_saves set save_data=$1,save_version=8 where id=$2',[JSON.stringify({...legacy,v:8,saveVersion:8}),made.id]);
@@ -33,10 +34,10 @@ const server=http.createServer(async(req,res)=>{
       }else{status=404;response={error:'not found'};}
       res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(response));return;
     }
-    if(url.pathname==='/functions/v1/student-admin'||url.pathname==='/functions/v1/student-save'){
+    if(url.pathname==='/functions/v1/student-admin-v2'||url.pathname==='/functions/v1/student-save-v2'){
       const headers=new Headers(req.headers);headers.set('origin','https://admin.fixture.invalid');
       const request=new Request(origin+url.pathname,{method:req.method,headers,body:Readable.toWeb(req),duplex:'half'});
-      const response=await(url.pathname.endsWith('student-admin')?fixture.handler(request):studentHandler(request));
+      const response=await(url.pathname.endsWith('student-admin-v2')?fixture.handler(request):studentHandler(request));
       res.writeHead(response.status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(Buffer.from(await response.arrayBuffer()));return;
     }
     if(url.pathname==='/favicon.ico'){res.writeHead(204);res.end();return;}

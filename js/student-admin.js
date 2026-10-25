@@ -136,9 +136,14 @@
     var state=runtime.migrate(JSON.parse(JSON.stringify(draft)));delete state.scene;delete state.modal;return state;
   }
   function confirm(title,text,fn,label='확인'){if(busy)return;$('dialogTitle').textContent=title;$('dialogBody').replaceChildren(node('p',text));confirmation=fn;$('acceptDialog').hidden=false;$('acceptDialog').textContent=label;$('cancelDialog').textContent='취소';$('confirmDialog').showModal();}
-  function showSecret(code){if(!code)return;$('dialogTitle').textContent='이어하기 코드';$('dialogBody').replaceChildren(node('p','이 코드는 학생 기록을 여는 비밀 코드입니다. 학생 본인에게만 전달하세요.'),node('p',code,'secret'));
+  function showSecret(code){if(!code)return;$('dialogTitle').textContent='개인 저장코드';
+    if(!root.EcoSaveCodeCard.valid(code)){
+      $('dialogBody').replaceChildren(node('p','이전 형식의 코드입니다. 학생 기록의 재발급 버튼으로 새 6자리 코드를 발급해 주세요. 플레이 정보는 유지됩니다.'));
+    }else{
+    $('dialogBody').replaceChildren(root.EcoSaveCodeCard.card(student?.saveData?.name||creationName,code));
     $('dialogBody').append(button('코드 복사',async()=>{try{await navigator.clipboard.writeText(code);note('코드를 복사했습니다.');}catch(_){note('코드를 직접 확인해 적어 주세요.');}}));
-    confirmation=null;$('acceptDialog').hidden=true;$('cancelDialog').textContent='닫기';if(!$('confirmDialog').open)$('confirmDialog').showModal();}
+    $('dialogBody').append(button('학생 코드 카드 출력',()=>root.EcoSaveCodeCard.print(student?.saveData?.name||creationName,code),'secondary'));
+    }confirmation=null;$('acceptDialog').hidden=true;$('cancelDialog').textContent='닫기';if(!$('confirmDialog').open)$('confirmDialog').showModal();}
   function preview(){
     if(busy||!student||!draft)return;var state;try{state=normalized();}catch(_){note('입력 형식을 확인해 주세요.',true);return;}
     var labels={name:'이름',lv:'레벨',exp:'EXP',gold:'골드',potions:'회복약',tickets:'뽑기권',themeId:'현재 지역',gauge:'정화율',cleared:'지역 완료',progress:'지역 진행',owned:'보유 장비',gear:'착용 장비',farm:'농장',ecoTechUnlocked:'생태기술',tower:'탑 기록',lessonDone:'학습',quizDone:'퀴즈',advDone:'생각 넓히기',battleDone:'전투 진행'};

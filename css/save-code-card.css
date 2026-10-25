@@ -1,0 +1,10 @@
+.eco-save-code-card{box-sizing:border-box;width:100%;padding:18px;border:1px solid #637d74;border-radius:12px;background:#142b29;color:#edf8ee;text-align:center;overflow-wrap:anywhere}
+.eco-save-code-card h3{font-size:16px;margin:0 0 10px}.eco-save-code-card p{font-size:13px;line-height:1.5;margin:8px 0}
+.eco-save-code-card strong{display:block;font:700 clamp(32px,6vw,44px)/1.4 ui-monospace,monospace;letter-spacing:5px;color:#ffe299;user-select:all;white-space:nowrap}
+.eco-code-print{display:none}
+@media print{
+  body>*:not(#ecoCodePrint){display:none!important}
+  #ecoCodePrint{display:block!important;width:100mm;max-width:100%;margin:12mm auto;background:#fff;color:#111;border:1px solid #333;break-inside:avoid}
+  #ecoCodePrint strong{color:#111;font-size:32px}
+  @page{margin:12mm}
+}

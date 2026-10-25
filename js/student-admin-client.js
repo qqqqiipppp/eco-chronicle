@@ -15,7 +15,7 @@
         if(!token)return {ok:false,error:'ADMIN_UNAUTHENTICATED',message:messages.ADMIN_UNAUTHENTICATED};
         var result=await Promise.race([new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(Error('TIMEOUT'));},timeoutMs);}),
           (async()=>{
-            var response=await fetcher(config.projectUrl+'/functions/v1/student-admin',{method:'POST',headers:{apikey:config.publishableKey,Authorization:'Bearer '+token,'Content-Type':'application/json'},
+            var response=await fetcher(config.projectUrl+'/functions/v1/'+(config.functionName||'student-admin-v2'),{method:'POST',headers:{apikey:config.publishableKey,Authorization:'Bearer '+token,'Content-Type':'application/json'},
               credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer',signal:controller.signal,body:JSON.stringify(Object.assign({action},fields))});
             var reader=response.body?.getReader(),parts=[],length=0,text;
             if(reader){try{while(true){var item=await reader.read();if(item.done)break;length+=item.value.length;if(length>524288){await reader.cancel();throw Error('RESPONSE_TOO_LARGE');}parts.push(item.value);}}

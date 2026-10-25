@@ -1,20 +1,21 @@
+import {testSecret} from './helpers/cloud-save-runtime.mjs';
 // Developer-only browser fixture. Two ports provide genuinely separate storage origins.
 // --live forwards unchanged student requests to the real Edge Function, with public keys only.
 import http from 'node:http';import fs from 'node:fs/promises';import path from 'node:path';import {Readable} from 'node:stream';
 import {root,database} from './helpers/cloud-save-runtime.mjs';
 import {createHandler} from '../supabase/functions/student-save/handler.mjs';
-const live=process.argv.includes('--live'),ports=[54431,54432];
+const live=process.argv.includes('--live'),basePort=Number(process.env.ECO_CLOUD_QA_PORT)||54431,ports=[basePort,basePort+1];
 const config=await fs.readFile(path.join(root,'js/supabase.js'),'utf8');
 const cloudUrl=config.match(/var projectUrl = '([^']+)'/)[1],publicKey=config.match(/var publishableKey = '([^']+)'/)[1];
-const local=live?null:await database(true),handler=local?createHandler({rpc:local.rpc,publicKeys:[publicKey],allowedOrigins:ports.map(p=>'http://127.0.0.1:'+p)}):null;
+const local=live?null:await database(true),handler=local?createHandler({secret:testSecret,rpc:local.rpc,publicKeys:[publicKey],allowedOrigins:ports.map(p=>'http://127.0.0.1:'+p)}):null;
 const servers=[];
 for(const port of ports){
   const server=http.createServer(async(req,res)=>{
     try{
       const url=new URL(req.url,'http://localhost');
-      if(url.pathname==='/functions/v1/student-save'){
+      if(url.pathname==='/functions/v1/student-save-v2'){
         const request=new Request((live?cloudUrl:'http://localhost')+url.pathname,{method:req.method,
-          headers:{apikey:publicKey,'Content-Type':'application/json'},...(['GET','HEAD'].includes(req.method)?{}:{body:Readable.toWeb(req),duplex:'half'})});
+          headers:{apikey:publicKey,'Content-Type':'application/json','x-eco-device':req.headers['x-eco-device']||'','x-eco-resume':req.headers['x-eco-resume']||''},...(['GET','HEAD'].includes(req.method)?{}:{body:Readable.toWeb(req),duplex:'half'})});
         const response=live?await fetch(request):await handler(request);
         res.writeHead(response.status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(Buffer.from(await response.arrayBuffer()));return;
       }
@@ -28,7 +29,7 @@ for(const port of ports){
         window.__qaOffline=false;window.__qaLoseNext=null;
         Object.defineProperty(navigator,'onLine',{get:function(){return !window.__qaOffline;}});
         var qaFetch=window.fetch.bind(window);window.fetch=async function(url,init){
-          if(String(url).includes('/functions/v1/student-save')){
+          if(String(url).includes('/functions/v1/student-save-v2')){
             if(window.__qaOffline)throw new TypeError('QA offline');
             var action=JSON.parse(init.body).action,response=await qaFetch(url,init);
             if(action===window.__qaLoseNext){window.__qaLoseNext=null;await response.text();throw new TypeError('QA response lost');}return response;

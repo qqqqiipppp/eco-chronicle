@@ -90,7 +90,7 @@ test('offline progress survives reload in one cache and synchronizes on reconnec
 });
 test('a new offline device fails safely without inventing progress or a character',async()=>{
   const a=client();a.setOnline(false);const before=JSON.stringify(a.c.S);
-  assert.equal((await a.sync.loadCode('EC-7K4P-2Q9M')).ok,false);assert.equal(JSON.stringify(a.c.S),before);
+  assert.equal((await a.sync.loadCode('K7M4P2')).ok,false);assert.equal(JSON.stringify(a.c.S),before);
 });
 test('linked local resume reads newer server, preserves internal code and migrates via current rules',async()=>{
   const a=await linked(),code=a.sync.view().code,serverState=(await a.base.load(code)).saveData;

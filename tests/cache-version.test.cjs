@@ -50,15 +50,15 @@ test('HTML stamping retains script order/defer and leaves CDN unchanged',()=>{
 test('deployed HTML and six CSS campfires share canonical version; referenced local files exist',()=>{
   const c=context(),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
   const local=[...html.matchAll(/<(?:link|script)\b[^>]*\b(?:src|href)="(\.\/(?:css|js)\/[^\"]+)"[^>]*>/g)].map(match=>match[1]);
-  assert.equal(local.length,42);
+  assert.equal(local.length,44);
   const scriptTags=[...html.matchAll(/<script\b([^>]*\bsrc="([^"]+)"[^>]*)>/g)];
   const expected=['boot','build-version','sprites','sprite-meta','player-tint','visuals','audio-data','gear-data','equipment-ui','ecotech-exploration','ecotech','npc-data','map-utils','theme-data','learning-data','learning-ui','learning-diagrams','battle-view','encounters','minigame','tower-elites','animal-care','student-state','game','sound-settings','plogging'];
   assert.deepEqual(scriptTags.slice(0,26).map(match=>match[2].split('?')[0]),expected.map(name=>'./js/'+name+'.js'));
   assert.ok(scriptTags.slice(0,26).every(match=>!(/\b(?:async|defer|type)=?/.test(match[1]))));
-  assert.ok(scriptTags.slice(29).every(match=>/\bdefer\b/.test(match[1])));
-  assert.deepEqual(scriptTags.slice(26,29).map(match=>match[2].split('?')[0]),['cloud-save','cloud-sync','cloud-ui'].map(name=>'./js/'+name+'.js'));
-  assert.ok(scriptTags.slice(26,29).every(match=>!/\bdefer\b/.test(match[1])),'local backups and student UI cannot wait for the Realtime CDN');
-  assert.deepEqual(scriptTags.slice(30).map(match=>match[2].split('?')[0]),['supabase','multiplayer-config','remote-players','movement','player-list','presence'].map(name=>'./js/'+name+'.js'));
+  assert.ok(scriptTags.slice(30).every(match=>/\bdefer\b/.test(match[1])));
+  assert.deepEqual(scriptTags.slice(26,30).map(match=>match[2].split('?')[0]),['cloud-save','cloud-sync','save-code-card','cloud-ui'].map(name=>'./js/'+name+'.js'));
+  assert.ok(scriptTags.slice(26,30).every(match=>!/\bdefer\b/.test(match[1])),'local backups and student UI cannot wait for the Realtime CDN');
+  assert.deepEqual(scriptTags.slice(31).map(match=>match[2].split('?')[0]),['supabase','multiplayer-config','remote-players','movement','player-list','presence'].map(name=>'./js/'+name+'.js'));
   for(const url of local){
     assert.equal(new URLSearchParams(url.split('?')[1]).get('v'),c.BUILD_VERSION,url);
     assert.ok(fs.existsSync(path.join(root,url.split('?')[0])),url);

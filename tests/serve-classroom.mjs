@@ -1,3 +1,4 @@
+import {testSecret} from './helpers/cloud-save-runtime.mjs';
 // Local-only browser QA. This fixture has no live mode or external Supabase endpoint.
 // Run: node tests/serve-classroom.mjs
 import http from 'node:http';
@@ -7,10 +8,10 @@ import { Readable } from 'node:stream';
 import { root, database } from './helpers/cloud-save-runtime.mjs';
 import { createHandler } from '../supabase/functions/student-save/handler.mjs';
 
-const ports = [54451, 54452];
+const basePort=Number(process.env.ECO_CLASSROOM_QA_PORT)||54451,ports = [basePort, basePort+1];
 const publicKey = 'sb_publishable_classroom_test';
 const local = await database(true);
-const studentSave = createHandler({ rpc: local.rpc, publicKeys: [publicKey],
+const studentSave = createHandler({secret:testSecret, rpc: local.rpc, publicKeys: [publicKey],
   allowedOrigins: ports.map(port => 'http://127.0.0.1:' + port), logger: { error() {} } });
 const themes = new Set(['forest', 'river', 'ocean', 'city', 'air', 'climate']);
 const channels = new Map();
@@ -105,7 +106,7 @@ for (const port of ports) {
   const server = http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, 'http://127.0.0.1:' + port);
-      if (url.pathname === '/functions/v1/student-save') {
+      if (url.pathname === '/functions/v1/student-save-v2') {
         metrics.cloudRequests++;
         const request = new Request(url, { method: req.method, headers: req.headers,
           ...(['GET', 'HEAD'].includes(req.method) ? {} : { body: Readable.toWeb(req), duplex: 'half' }) });
@@ -152,7 +153,7 @@ const cleanup = setInterval(() => {
   }
   if (changed) version++;
 }, 10000);
-console.log('Classroom browser QA: http://127.0.0.1:54451 / http://127.0.0.1:54452');
+console.log('Classroom browser QA: '+ports.map(p=>'http://127.0.0.1:'+p).join(' / '));
 console.log('Local mocks only: shared in-memory PostgreSQL + HTTP Presence hub. Tablet: /tablet.html');
 async function close() {
   clearInterval(cleanup);

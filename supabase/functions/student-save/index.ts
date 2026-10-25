@@ -14,5 +14,6 @@ const allowedOrigins = (Deno.env.get('CLOUD_SAVE_ALLOWED_ORIGINS') || 'https://q
 Deno.serve(createHandler({
   rpc: url && backendKey ? createRpc({url, key:backendKey}) : null,
   publicKeys,
+  secret: Deno.env.get('CLOUD_SAVE_SIGNING_SECRET') || backendKey,
   allowedOrigins
 }));

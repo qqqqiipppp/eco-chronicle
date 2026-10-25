@@ -7,3 +7,12 @@ verify_jwt = false
 
 [functions.student-admin]
 verify_jwt = true
+
+# Staged six-character rollout; old deployed Pages continue using the legacy routes.
+[functions.student-save-v2]
+verify_jwt = false
+entrypoint = "./functions/student-save/index.ts"
+
+[functions.student-admin-v2]
+verify_jwt = true
+entrypoint = "./functions/student-admin/index.ts"

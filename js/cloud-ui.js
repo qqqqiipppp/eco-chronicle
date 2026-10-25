@@ -33,7 +33,7 @@
     try{result=await fn();}catch(_){result={ok:false};}
     busy=false;lock();
     if(!result.ok)message(error(result));
-    if(result.offline&&root.toast)root.toast('인터넷에 연결되지 않았어요. 이 기기에 저장된 기록으로 이어할게요.');
+    if(result.offline&&!result.legacy&&root.toast)root.toast('지금은 서버를 확인할 수 없어 이 기기의 기록으로 이어할게요.');
     pump();return result;
   }
   function lock() {document.querySelectorAll('.eco-cloud-sheet button,.eco-cloud-sheet input').forEach(function(el){el.disabled=busy;});}
@@ -47,13 +47,14 @@
     var body=document.createElement('div');body.className='col';sheet.appendChild(body);
     var msg=document.createElement('p');msg.id='ecoCloudMessage';msg.className='eco-cloud-message';msg.setAttribute('role','status');sheet.appendChild(msg);
     if(kind==='relink'){
-      body.appendChild(document.createTextNode('이어하기 코드가 변경되었거나 기록을 사용할 수 없어요. 선생님께 새 코드를 확인해 주세요. 이 기기의 아직 보내지 못한 기록은 그대로 보관해요.'));
+      body.appendChild(document.createTextNode('선생님께 새 6자리 저장코드를 확인해 주세요. 이 기기의 게임 기록과 아직 보내지 못한 기록은 그대로 보관해요.'));
       body.appendChild(button('새 코드 입력',function(){show('load');}));
       body.appendChild(button('이 기기에서 계속하기',close,true));
     } else if(kind==='load') {
-      var input=document.createElement('input');input.className='namefield eco-cloud-input';input.placeholder='EC-XXXX-XXXX';input.maxLength=16;
+      var input=document.createElement('input');input.className='namefield eco-cloud-input';input.placeholder='K7M4P2';input.maxLength=16;input.autocapitalize='characters';input.inputMode='text';
       input.setAttribute('aria-label','이어하기 코드');input.autocomplete='off';input.spellcheck=false;
       body.appendChild(input);
+      var help=document.createElement('small');help.textContent='영문과 숫자 6자리를 입력해요.';body.appendChild(help);
       var load=function(){run(async function(){var r=await sync.loadCode(input.value);if(r.ok){notice=null;}return r;});};
       input.addEventListener('keydown',function(e){if(e.key==='Enter')load();});body.appendChild(button('이어하기',load));input.focus();
     } else if(kind==='device') {
@@ -65,10 +66,11 @@
       if(!body.children.length)message('이 기기에 저장된 기록이 없어요.');
     } else if(kind==='code') {
       var view=sync.view();
-      if(view.code) {
-        var code=document.createElement('strong');code.className='eco-cloud-code';code.textContent=view.code;body.appendChild(code);
-        var note=document.createElement('p');note.className='note';note.textContent='다른 기기에서도 이 코드로 이어할 수 있어요. 이 코드는 내 게임 기록을 여는 코드예요. 다른 친구에게 알려주지 마세요.';body.appendChild(note);
+      if(view.relink){body.appendChild(document.createTextNode('이 기기의 기록은 그대로예요. 선생님께 새 6자리 저장코드를 확인해 주세요.'));body.appendChild(button('새 코드 입력',function(){show('load');}));}
+      else if(view.code) {
+        body.appendChild(root.EcoSaveCodeCard.card(root.S.name,view.code));
         body.appendChild(button('코드 복사',async function(){try{await navigator.clipboard.writeText(view.code);message('코드를 복사했어요.');}catch(_){message('코드를 보고 직접 적어 주세요.');}}));
+        body.appendChild(button('내 코드 카드 출력',function(){root.EcoSaveCodeCard.print(root.S.name,view.code);},true));
         body.appendChild(button('확인했어요',close,true));
         if(view.status==='error')message('기록 확인이 필요해요. 게임을 새로고침해 주세요.');
       } else promotion(body);

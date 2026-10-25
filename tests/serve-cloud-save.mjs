@@ -1,3 +1,4 @@
+import {testSecret} from './helpers/cloud-save-runtime.mjs';
 // Real PostgreSQL (WASM) + the deployed Edge handler; no production credentials.
 import http from 'node:http';import fs from 'node:fs/promises';import path from 'node:path';import {Readable} from 'node:stream';
 import {root,database} from './helpers/cloud-save-runtime.mjs';
@@ -8,7 +9,7 @@ const publicConfig={projectUrl:configSource.match(/var projectUrl = '([^']+)'/)[
 const server=http.createServer(async(req,res)=>{
   try{
     const url=new URL(req.url,'http://localhost');
-    if(url.pathname==='/functions/v1/student-save'){
+    if(url.pathname==='/functions/v1/student-save-v2'){
       const request=new Request('http://localhost'+req.url,{method:req.method,headers:req.headers,
         ...(['GET','HEAD'].includes(req.method)?{}:{body:Readable.toWeb(req),duplex:'half'})});
       const response=await handler(request);res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));return;
@@ -25,5 +26,5 @@ const server=http.createServer(async(req,res)=>{
 });
 await new Promise(resolve=>server.listen(Number(process.argv[2])||0,'127.0.0.1',resolve));
 const url='http://127.0.0.1:'+server.address().port;
-handler=createHandler({rpc,publicKeys:['sb_publishable_test_only'],allowedOrigins:[url]});console.log('Cloud QA: '+url);
+handler=createHandler({secret:testSecret,rpc,publicKeys:['sb_publishable_test_only'],allowedOrigins:[url]});console.log('Cloud QA: '+url);
 process.on('SIGINT',async()=>{server.close();await db.close();process.exit();});

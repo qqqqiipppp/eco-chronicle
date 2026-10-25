@@ -1,6 +1,7 @@
 /* Never loaded by production index.html. TEST data and fault injection only. */
 (function(){
   var frame=document.getElementById('game');
+  if(new URLSearchParams(location.search).has('tablet')){frame.style.width='1024px';frame.style.height='768px';}
   function game(){return frame.contentWindow;}
   document.getElementById('legacy').onclick=async function(){
     var c=game(),old=await (await fetch('/tests/fixtures/legacy-save/last-week.json')).json();
@@ -23,6 +24,7 @@
     document.getElementById('qaStatus').textContent=JSON.stringify({scene:s.scene,modal:s.modal,name:s.name,localCode:s.code,lv:s.lv,exp:s.exp,gold:s.gold,
       gear:s.gear,gauge:s.gauge,farm:s.farm,ecoTechUnlocked:s.ecoTechUnlocked,learning:s.learning,tower:s.tower,
       status:v.status,revision:v.revision,pending:v.pending,conflict:!!v.conflict,offline:c.__qaOffline,
+      viewport:[c.innerWidth,c.innerHeight],cardOverflow:!!(c.document.querySelector('.eco-save-code-card')&&c.document.querySelector('.eco-save-code-card').scrollWidth>c.document.querySelector('.eco-save-code-card').clientWidth),
       localSlots:c.Save.index().length,cacheEntries:c.CloudSync.entries().length,errors:c.__qaErrors||[]},null,0);
   }catch(_){}},250);
 })();

@@ -1,4 +1,5 @@
 // Web-standard handler: the very same code runs in Deno and in integration tests.
+import {createSecurity} from './security.mjs';
 export const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
 export const MAX_SAVE_BYTES = 131072;
 export const MAX_REQUEST_BYTES = 262144;
@@ -7,25 +8,24 @@ const encoder = new TextEncoder();
 export function normalizeCode(input) {
   if (typeof input !== 'string' || input.length > 64) return null;
   const raw = input.trim().toUpperCase();
-  if (!/^EC(?:-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}|[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8})$/.test(raw)) return null;
-  const compact = raw.replaceAll('-', '');
-  return compact.slice(0, 2) + '-' + compact.slice(2, 6) + '-' + compact.slice(6);
+  return /^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}$/.test(raw) && /[A-Z]/.test(raw) && /[2-9]/.test(raw) ? raw : null;
 }
 export function generateCode(random = crypto) {
-  let suffix = '';
-  // 31 symbols; reject excess byte values rather than introduce modulo bias.
-  while (suffix.length < 8) {
-    const bytes = random.getRandomValues(new Uint8Array(16));
-    for (const byte of bytes) {
-      if (byte < Math.floor(256 / ALPHABET.length) * ALPHABET.length) suffix += ALPHABET[byte % ALPHABET.length];
-      if (suffix.length === 8) break;
+  // Unbiased rejection sampling, including rejection of all-letter/all-digit codes.
+  for (let attempt=0; attempt<64; attempt++) {
+    let suffix='';
+    for (let batch=0; suffix.length<6 && batch<16; batch++) {
+      for (const byte of random.getRandomValues(new Uint8Array(16))) {
+        if (byte < Math.floor(256/ALPHABET.length)*ALPHABET.length) suffix += ALPHABET[byte%ALPHABET.length];
+        if (suffix.length===6) break;
+      }
     }
+    if (normalizeCode(suffix)) return suffix;
   }
-  return 'EC-' + suffix.slice(0, 4) + '-' + suffix.slice(4);
+  throw Error('RANDOM_UNAVAILABLE');
 }
 export function isObject(value) { return !!value && typeof value === 'object' && !Array.isArray(value); }
 export function validVersion(value) { return Number.isInteger(value) && value > 0 && value <= 2147483647; }
-function mask(code) { return code ? code.slice(0, 5) + '**-****' : undefined; }
 export function validateData(data, version) {
   if (!isObject(data) || !Object.keys(data).every(key => STUDENT_FIELDS.has(key))) return 'INVALID_SAVE_DATA';
   if (!validVersion(version)) return 'INVALID_SAVE_VERSION';
@@ -50,19 +50,20 @@ async function readJson(request) {
     return JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(bytes));
   } finally { reader.releaseLock(); }
 }
-export function createHandler({rpc, publicKeys, allowedOrigins, random = crypto, logger = console}) {
+export function createHandler({rpc, publicKeys, allowedOrigins, secret, random = crypto, logger = console}) {
   const keys = new Set((publicKeys || []).filter(Boolean));
   const origins = new Set(allowedOrigins || []);
+  const security = secret ? createSecurity(secret) : null;
   return async function handler(request) {
     const origin = request.headers.get('origin');
     const cors = { 'Vary': 'Origin', 'Cache-Control': 'no-store', 'Content-Type': 'application/json; charset=utf-8',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'apikey, content-type, x-client-info', 'Access-Control-Max-Age': '600' };
+      'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'apikey, content-type, x-client-info, x-eco-device, x-eco-resume', 'Access-Control-Expose-Headers':'Retry-After', 'Access-Control-Max-Age': '600' };
     if (origin && origins.has(origin)) cors['Access-Control-Allow-Origin'] = origin;
     const reply = (data, status = 200) => new Response(JSON.stringify(data), {status, headers: cors});
     if (origin && !origins.has(origin)) return reply({ok:false, error:'ORIGIN_NOT_ALLOWED'}, 403);
     if (request.method === 'OPTIONS') return new Response(null, {status:204, headers:cors});
     if (request.method !== 'POST') return reply({ok:false, error:'METHOD_NOT_ALLOWED'}, 405);
-    if (!keys.size || !rpc || !origins.size) return reply({ok:false, error:'SERVER_UNAVAILABLE'}, 503);
+    if (!keys.size || !rpc || !origins.size || !security) return reply({ok:false, error:'SERVER_UNAVAILABLE'}, 503);
     if (!keys.has(request.headers.get('apikey'))) return reply({ok:false, error:'UNAUTHORIZED'}, 401);
     if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get('content-type') || '')) return reply({ok:false, error:'INVALID_REQUEST'}, 400);
     let operation, code;
@@ -82,32 +83,44 @@ export function createHandler({rpc, publicKeys, allowedOrigins, random = crypto,
         if (invalid) return reply({ok:false, error:invalid}, 400);
       }
       if (operation === 'save' && (!Number.isSafeInteger(body.expectedRevision) || body.expectedRevision < 1 || body.expectedRevision >= Number.MAX_SAFE_INTEGER)) return reply({ok:false, error:'INVALID_REVISION'}, 400);
+      const identity = await security.identities(request, code || 'create');
+      const trusted = operation !== 'create' && await security.verify(request.headers.get('x-eco-resume'), code, identity.device);
+      const guarded = candidate => rpc('student_save_guarded', {
+        p_action:operation, p_code:candidate, p_save_data:body.saveData ?? null, p_save_version:body.saveVersion ?? null,
+        p_expected_revision:body.expectedRevision ?? null, p_create_request_id:body.createRequestId ?? null,
+        p_device:identity.device, p_ip:identity.ip, p_code_hash:identity.code, p_trusted:trusted
+      });
       let result;
       if (operation === 'create') {
         for (let attempt = 0; attempt < 8; attempt++) {
           code = generateCode(random);
-          const args = {p_code:code, p_save_data:body.saveData, p_save_version:body.saveVersion};
-          if (body.createRequestId) args.p_create_request_id = body.createRequestId;
-          result = await rpc(body.createRequestId ? 'student_save_create_once' : 'student_save_create', args);
+          result = await guarded(code);
           if (result.error !== 'CODE_EXISTS') break;
         }
         if (result.error === 'CODE_EXISTS') return reply({ok:false, error:'SERVER_UNAVAILABLE'}, 503);
       } else if (operation === 'load') {
-        result = await rpc('student_save_load', {p_code:code});
+        result = await guarded(code);
       } else {
-        result = await rpc('student_save_update', {p_code:code, p_save_data:body.saveData, p_save_version:body.saveVersion, p_expected_revision:body.expectedRevision});
+        result = await guarded(code);
       }
       if (!isObject(result) || typeof result.ok !== 'boolean') throw new Error('INVALID_BACKEND_RESPONSE');
       if (!result.ok) {
+        if (result.error === 'RATE_LIMITED') {
+          const retryAfter = Math.max(1, Math.min(86400, Number(result.retryAfter)||60));
+          cors['Retry-After'] = String(retryAfter);
+          return reply({ok:false,error:'RATE_LIMITED',retryAfter},429);
+        }
         if (result.error === 'REVISION_CONFLICT' && Number.isSafeInteger(result.serverRevision)) return reply({ok:false, error:'REVISION_CONFLICT', serverRevision:result.serverRevision}, 409);
         if (result.error === 'NOT_FOUND') return reply({ok:false, error:'NOT_FOUND'}, 404);
         if (result.error === 'INVALID_REVISION') return reply({ok:false, error:'INVALID_REVISION'}, 400);
         throw new Error('BACKEND_ERROR');
       }
       // No code, nickname, save body, SQL errors or request URLs are dumped to logs.
-      return reply(result);
+      // Codes/tokens never enter game state, Presence, URLs, or server logs.
+      if (!normalizeCode(result.code)) return reply({ok:false,error:'NOT_FOUND'},404);
+      return reply({...result,resumeToken:await security.issue(result.code, identity.device)});
     } catch (_) {
-      logger.error('[CloudSave]', {operation, code:mask(code), error:'SERVER_UNAVAILABLE'});
+      logger.error('[CloudSave]', {operation, error:'SERVER_UNAVAILABLE'});
       return reply({ok:false, error:'SERVER_UNAVAILABLE'}, 503);
     }
   };

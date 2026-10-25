@@ -5,9 +5,6 @@ import {database,read,root} from './cloud-save-runtime.mjs';
 import {createAdminHandler,createAuthVerifier} from '../../supabase/functions/student-admin/handler.mjs';
 export async function adminDatabase(){
   const base=await database(true);
-  await base.db.exec('create schema auth;create table auth.users(id uuid primary key);');
-  const migration=fs.existsSync(path.join(root,'supabase/admin-schema.sql'))?'supabase/admin-schema.sql':'supabase/migrations/'+fs.readdirSync(path.join(root,'supabase/migrations')).find(f=>f.endsWith('_student_admin_management.sql'));
-  await base.db.exec(read(migration));
   const admin=randomUUID(),regular=randomUUID(),disabled=randomUUID();
   for(const id of [admin,regular,disabled])await base.db.query('insert into auth.users(id)values($1)',[id]);
   await base.db.query("insert into public.app_admins(user_id,display_name)values($1,'TEST administrator'),($2,'TEST disabled')",[admin,disabled]);
